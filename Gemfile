@@ -28,3 +28,4 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 gem 'jekyll-watch'
 gem 'github-pages', '72'
+gem "pygments.rb"
