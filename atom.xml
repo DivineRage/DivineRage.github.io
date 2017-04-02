@@ -3,103 +3,25 @@
     <title>Mick Derks</title>
     <link href="/atom.xml" rel="self"/>
     <link href="/"/>
-    <updated>2017-04-02T21:28:31+02:00</updated>
+    <updated>2017-04-03T01:13:50+02:00</updated>
     <id></id>
     <author>
       <name>Mick Derks</name>
       <email></email>
     </author>
     <entry>
-      <title>Unity Android * An optimization retrospective</title>
-      <link href="/blog/2017/04/02/unity-android-optimization-retrospective/"/>
-      <updated>2017-04-02T00:00:00+02:00</updated>
-      <id>/blog/2017/04/02/unity-android-optimization-retrospective</id>
-      <content type="html">&lt;p&gt;I’ve been working on &lt;a href=&quot;projects/flood&quot;&gt;Flood&lt;/a&gt; for a few weeks now. It’s been fun to finally call something complete and actually be proud of it. It means I can tell people I’m a game developer and not feel like an abysmal failure because I’ve got nothing to show them.&lt;/p&gt;
-        &lt;p&gt;The project started as something simple but very polished that I can use as a portfolio piece.
-        Because of this I consider the game’s performance to be incredibly important. This meant that after the initial prototype was complete I’ve made several performance passes on the game.&lt;/p&gt;
-        &lt;div class=&quot;right-extending&quot;&gt;
-        &lt;table&gt;
-        &lt;thead&gt;
-        &lt;tr&gt;
-        &lt;th&gt;Parts&lt;/th&gt;
-        &lt;th&gt;Desktop&lt;/th&gt;
-        &lt;th&gt;Laptop&lt;/th&gt;
-        &lt;/tr&gt;
-        &lt;/thead&gt;
-        &lt;tbody&gt;
-        &lt;tr&gt;
-        &lt;td&gt;CPU&lt;/td&gt;
-        &lt;td&gt;i5-3570k&lt;/td&gt;
-        &lt;td&gt;i7-4710MQ&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;tr&gt;
-        &lt;td&gt;RAM&lt;/td&gt;
-        &lt;td&gt;16GB&lt;/td&gt;
-        &lt;td&gt;8GB&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;tr&gt;
-        &lt;td&gt;GPU&lt;/td&gt;
-        &lt;td&gt;R9 380&lt;/td&gt;
-        &lt;td&gt;GTX 860M&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;/tbody&gt;
-        &lt;/table&gt;
-        &lt;/div&gt;
-        &lt;p&gt;Development was done partially on my desktop and laptop. Both are generally significantly most powerful than even the most high-end phones, not to mention the average phone, so during development I did not have any real performance issues for the most part. However, performance dropped off a cliff when I initially started testing on mobile.&lt;/p&gt;
-        &lt;table&gt;
-        &lt;thead&gt;
-        &lt;tr&gt;
-        &lt;th&gt;Grid Size&lt;/th&gt;
-        &lt;th&gt;UGUI&lt;/th&gt;
-        &lt;th&gt;Individual Quads&lt;/th&gt;
-        &lt;th&gt;Single Static Mesh&lt;/th&gt;
-        &lt;/tr&gt;
-        &lt;/thead&gt;
-        &lt;tbody&gt;
-        &lt;tr&gt;
-        &lt;td&gt;24x24&lt;/td&gt;
-        &lt;td&gt;&amp;lt;5fps&lt;/td&gt;
-        &lt;td&gt;20-60fps&lt;/td&gt;
-        &lt;td&gt;60fps&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;tr&gt;
-        &lt;td&gt;36x36&lt;/td&gt;
-        &lt;td&gt;-&lt;/td&gt;
-        &lt;td&gt;5-10fps&lt;/td&gt;
-        &lt;td&gt;60fps&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;/tbody&gt;
-        &lt;/table&gt;
-        &lt;p&gt;Initially I had capped the grid size at 24x24, but during the initial rounds of testing I got requests to increase this number. Unfortunately, when I first tried to bump it up to 36x36 it just ground to a halt. This was my cue to invest some serious time and effort into getting used to Unity’s profiling tools.&lt;/p&gt;
-        &lt;h3 id=&quot;unity-ui-grid-the-naive-approach&quot;&gt;Unity UI Grid; the naive approach.&lt;/h3&gt;
-        &lt;p&gt;A quick note on my initial prototyping approach. It was all done in UGUI. Now, I knew this wasn’t a great solution, but it worked.&lt;/p&gt;
-        &lt;p&gt;On a 24x24 grid that meant 576 tiles. Each tile had a sprite for color (and possible texture), and a sprite for the overlayed icon. Every child was tweened separately using the truly wonderful &lt;a href=&quot;http://dotween.demigiant.com/&quot;&gt;DOTween&lt;/a&gt;. I didn’t actually profile this approach thoroughly before I scrapped and rewrote it, but just rendering alone ran into performance issues on my desktop. After watching &lt;a href=&quot;https://www.youtube.com/watch?v=n*oZa4Fb12U&quot;&gt;this Unite 2016 presentation by Ian Dundore&lt;/a&gt; I realised just how poorly optimized this approach was.&lt;/p&gt;
-        &lt;ul&gt;
-        &lt;li&gt;Everything was done in UGUI, and all in the same canvas.&lt;/li&gt;
-        &lt;/ul&gt;
-        &lt;p&gt;I didn’t know exactly how big of a deal this was until I watched that presentation. But after that I realised that every time I changed those transforms it would rebuild the entire canvas. That meant every UI element, but more importantly that meant that on a 24x24 grid all 576 tiles would also be rebuilt. I thought, when writing it, that changing a recttransform’s scale was not included in this. I was wrong. My entire canvas was rebuilt every single frame anything happened at all.&lt;/p&gt;
-        &lt;ul&gt;
-        &lt;li&gt;Render order problems were ‘handled’ by setting sibling index to last.&lt;/li&gt;
-        &lt;/ul&gt;
-        &lt;p&gt;Due to the way Unity renders its UGUI system in the order in which its transforms are laid out, every scaling tile would be drawn over by any tile after it. To fix this, instead of messing with the render order for each &lt;code&gt;CanvasRenderer&lt;/code&gt; component, I hacked it together by reordering all animating tiles to be the last children of their parent. Unfortunately this caused a lot of memory being shuffled around every time I did this. I didn’t do it every frame, only&lt;/p&gt;
-        &lt;h3 id=&quot;individual-quads-the-batching-nightmare&quot;&gt;Individual Quads; the batching nightmare.&lt;/h3&gt;
-        &lt;h3 id=&quot;garbage-collection&quot;&gt;Garbage Collection!&lt;/h3&gt;
-        &lt;h3 id=&quot;single-mesh-the-solution&quot;&gt;Single mesh; the solution.&lt;/h3&gt;
-      </content>
-    </entry>
-    <entry>
       <title>What's this?</title>
-      <link href="/test/2017/04/01/test-page-1/"/>
+      <link href="/test/test-page-1"/>
       <updated>2017-04-01T00:00:00+02:00</updated>
-      <id>/test/2017/04/01/test-page-1</id>
+      <id>/test/test-page-1</id>
       <content type="html">&lt;p&gt;Hello world!&lt;/p&gt;
       </content>
     </entry>
     <entry>
       <title>Welcome to Jekyll!</title>
-      <link href="/jekyll/update/2017/03/31/welcome-to-jekyll/"/>
+      <link href="/jekyll/update/welcome-to-jekyll"/>
       <updated>2017-03-31T16:43:36+02:00</updated>
-      <id>/jekyll/update/2017/03/31/welcome-to-jekyll</id>
+      <id>/jekyll/update/welcome-to-jekyll</id>
       <content type="html">&lt;p&gt;You’ll find this post in your &lt;code&gt;_posts&lt;/code&gt; directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run &lt;code&gt;jekyll serve&lt;/code&gt;, which launches a web server and auto-regenerates your site when a file is updated.&lt;/p&gt;
         &lt;p&gt;To add new posts, simply add a file in the &lt;code&gt;_posts&lt;/code&gt; directory that follows the convention &lt;code&gt;YYYY-MM-DD-name-of-post.ext&lt;/code&gt; and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.&lt;/p&gt;
         &lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
