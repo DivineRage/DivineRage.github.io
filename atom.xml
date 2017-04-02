@@ -3,7 +3,7 @@
     <title>Mick Derks</title>
     <link href="/atom.xml" rel="self"/>
     <link href="/"/>
-    <updated>2017-04-02T15:42:35+02:00</updated>
+    <updated>2017-04-02T21:28:31+02:00</updated>
     <id></id>
     <author>
       <name>Mick Derks</name>
@@ -17,7 +17,35 @@
       <content type="html">&lt;p&gt;I’ve been working on &lt;a href=&quot;projects/flood&quot;&gt;Flood&lt;/a&gt; for a few weeks now. It’s been fun to finally call something complete and actually be proud of it. It means I can tell people I’m a game developer and not feel like an abysmal failure because I’ve got nothing to show them.&lt;/p&gt;
         &lt;p&gt;The project started as something simple but very polished that I can use as a portfolio piece.
         Because of this I consider the game’s performance to be incredibly important. This meant that after the initial prototype was complete I’ve made several performance passes on the game.&lt;/p&gt;
-        &lt;p&gt;Development was done partially on my desktop and laptop. Both are, needless to say, generally significantly more powerful than pretty much any phone.&lt;/p&gt;
+        &lt;div class=&quot;right-extending&quot;&gt;
+        &lt;table&gt;
+        &lt;thead&gt;
+        &lt;tr&gt;
+        &lt;th&gt;Parts&lt;/th&gt;
+        &lt;th&gt;Desktop&lt;/th&gt;
+        &lt;th&gt;Laptop&lt;/th&gt;
+        &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+        &lt;tr&gt;
+        &lt;td&gt;CPU&lt;/td&gt;
+        &lt;td&gt;i5-3570k&lt;/td&gt;
+        &lt;td&gt;i7-4710MQ&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+        &lt;td&gt;RAM&lt;/td&gt;
+        &lt;td&gt;16GB&lt;/td&gt;
+        &lt;td&gt;8GB&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+        &lt;td&gt;GPU&lt;/td&gt;
+        &lt;td&gt;R9 380&lt;/td&gt;
+        &lt;td&gt;GTX 860M&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;/tbody&gt;
+        &lt;/table&gt;
+        &lt;/div&gt;
+        &lt;p&gt;Development was done partially on my desktop and laptop. Both are generally significantly most powerful than even the most high-end phones, not to mention the average phone, so during development I did not have any real performance issues for the most part. However, performance dropped off a cliff when I initially started testing on mobile.&lt;/p&gt;
         &lt;table&gt;
         &lt;thead&gt;
         &lt;tr&gt;
@@ -30,7 +58,7 @@
         &lt;tbody&gt;
         &lt;tr&gt;
         &lt;td&gt;24x24&lt;/td&gt;
-        &lt;td&gt;~5fps&lt;/td&gt;
+        &lt;td&gt;&amp;lt;5fps&lt;/td&gt;
         &lt;td&gt;20-60fps&lt;/td&gt;
         &lt;td&gt;60fps&lt;/td&gt;
         &lt;/tr&gt;
@@ -42,61 +70,21 @@
         &lt;/tr&gt;
         &lt;/tbody&gt;
         &lt;/table&gt;
+        &lt;p&gt;Initially I had capped the grid size at 24x24, but during the initial rounds of testing I got requests to increase this number. Unfortunately, when I first tried to bump it up to 36x36 it just ground to a halt. This was my cue to invest some serious time and effort into getting used to Unity’s profiling tools.&lt;/p&gt;
+        &lt;h3 id=&quot;unity-ui-grid-the-naive-approach&quot;&gt;Unity UI Grid; the naive approach.&lt;/h3&gt;
+        &lt;p&gt;A quick note on my initial prototyping approach. It was all done in UGUI. Now, I knew this wasn’t a great solution, but it worked.&lt;/p&gt;
+        &lt;p&gt;On a 24x24 grid that meant 576 tiles. Each tile had a sprite for color (and possible texture), and a sprite for the overlayed icon. Every child was tweened separately using the truly wonderful &lt;a href=&quot;http://dotween.demigiant.com/&quot;&gt;DOTween&lt;/a&gt;. I didn’t actually profile this approach thoroughly before I scrapped and rewrote it, but just rendering alone ran into performance issues on my desktop. After watching &lt;a href=&quot;https://www.youtube.com/watch?v=n*oZa4Fb12U&quot;&gt;this Unite 2016 presentation by Ian Dundore&lt;/a&gt; I realised just how poorly optimized this approach was.&lt;/p&gt;
         &lt;ul&gt;
-        &lt;li&gt;Game ran more or less fine on desktop&lt;/li&gt;
-        &lt;li&gt;After some minor optimizations it ran acceptably on mobile&lt;/li&gt;
-        &lt;li&gt;Worst case scenario on Samsung Galaxy S4 Active ran around 25-30fps when animating almost every tile in the grid.&lt;/li&gt;
-        &lt;li&gt;Initial feedback asked for bigger grid sizes.&lt;/li&gt;
-        &lt;li&gt;Simply trying a bigger size broke down immediately. 36×36 ran at ~8fps when stationary.&lt;/li&gt;
-        &lt;li&gt;Took some time to get a grip on my profiling options.&lt;/li&gt;
-        &lt;li&gt;Ran with around ~1300 draw calls on a 36x36 grid.&lt;/li&gt;
+        &lt;li&gt;Everything was done in UGUI, and all in the same canvas.&lt;/li&gt;
         &lt;/ul&gt;
-        &lt;h3 id=&quot;unity-ui-grid&quot;&gt;Unity UI grid&lt;/h3&gt;
+        &lt;p&gt;I didn’t know exactly how big of a deal this was until I watched that presentation. But after that I realised that every time I changed those transforms it would rebuild the entire canvas. That meant every UI element, but more importantly that meant that on a 24x24 grid all 576 tiles would also be rebuilt. I thought, when writing it, that changing a recttransform’s scale was not included in this. I was wrong. My entire canvas was rebuilt every single frame anything happened at all.&lt;/p&gt;
         &lt;ul&gt;
-        &lt;li&gt;Grid of sprites.&lt;/li&gt;
-        &lt;li&gt;Performance issues even at 24x24 on desktop.&lt;/li&gt;
-        &lt;li&gt;Tried optimizing it a bit after watching &lt;a href=&quot;https://www.youtube.com/watch?v=n*oZa4Fb12U&quot;&gt;this Unite 2016 presentation by Ian Dundore.&lt;/a&gt;&lt;/li&gt;
-        &lt;li&gt;Changing sibling index to change render order is a bad idea. I suspect changing the renderer’s sort order would be a lot quicker, but I haven’t tried this. I doubt it’s good enough to make this approach viable as it suffers from the same problem as the next approach.&lt;/li&gt;
-        &lt;li&gt;Replaced very early on.&lt;/li&gt;
+        &lt;li&gt;Render order problems were ‘handled’ by setting sibling index to last.&lt;/li&gt;
         &lt;/ul&gt;
-        &lt;h3 id=&quot;grid-of-tweened-quads&quot;&gt;Grid of Tweened quads.&lt;/h3&gt;
-        &lt;ul&gt;
-        &lt;li&gt;Grid of quads.&lt;/li&gt;
-        &lt;li&gt;&lt;a href=&quot;http://dotween.demigiant.com/&quot;&gt;Resized using the excellent DOTween&lt;/a&gt;&lt;/li&gt;
-        &lt;li&gt;Tile color, icon opacity, icon index, all set through a &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html&quot;&gt;&lt;code&gt;MaterialPropertyBlock&lt;/code&gt;&lt;/a&gt;.&lt;/li&gt;
-        &lt;li&gt;Worked fine on desktop.&lt;/li&gt;
-        &lt;li&gt;Broke down completely on mobile.&lt;/li&gt;
-        &lt;li&gt;1000-2000 draw calls on desktop is on the high end, but it’ll run fine most of the time.&lt;/li&gt;
-        &lt;li&gt;1000 draw calls on mobile and it’ll grind to a halt in a heartbeat.&lt;/li&gt;
-        &lt;li&gt;Tweening colors on 1296 tiles, delayed a bit based on position means little to no batching.&lt;/li&gt;
-        &lt;/ul&gt;
-        &lt;h3 id=&quot;memory-allocation&quot;&gt;Memory allocation.&lt;/h3&gt;
-        &lt;ul&gt;
-        &lt;li&gt;Stable framerates would maybe be acceptable.&lt;/li&gt;
-        &lt;li&gt;Large amounts of garbage created by DOTween usage as well as string manipulation.&lt;/li&gt;
-        &lt;li&gt;Ended up with 20ms+ garbage collection spikes.&lt;/li&gt;
-        &lt;li&gt;Became less lazy with strings. Only changed them when actually needed instead of just creating them from scratch every frame.&lt;/li&gt;
-        &lt;li&gt;Not sure if large allocation numbers were something exclusive to the Unity editor, if they were down to the ancient version of Mono used by Unity, or if the few strings manipulated each frame really do have such a massive impact even in modern C#.&lt;/li&gt;
-        &lt;li&gt;Not uncommon for the editor profiler being not very accurate or useful.&lt;/li&gt;
-        &lt;li&gt;Single &lt;code&gt;Debug.Log()&lt;/code&gt; calls showing as taking 10ms+ in the editor does not sound accurate at all.&lt;/li&gt;
-        &lt;/ul&gt;
-        &lt;h3 id=&quot;single-mesh&quot;&gt;Single mesh.&lt;/h3&gt;
-        &lt;ul&gt;
-        &lt;li&gt;Single static mesh. All of the original quads merged into a single mesh.&lt;/li&gt;
-        &lt;li&gt;Two UV channels. One where each quad is the full 0&lt;em&gt;1 UV space. One where each quad is a point in UV space, positioned as if the 0&lt;/em&gt;1 UV space were a 64×64 grid and the point is the tile’s coordinate.&lt;/li&gt;
-        &lt;li&gt;Custom shader that takes 3 textures. One icon spritesheet. Two 64×64 data textures.&lt;/li&gt;
-        &lt;li&gt;One data texture for the fragment data that defines the tile’s RGB color as well as the icon’s opacity in the A channel.&lt;/li&gt;
-        &lt;li&gt;Another data texture for the vertex data that defines the tile’s size in the R channel, and the x offset for the icon sprite UV’s to display the correct icon.&lt;/li&gt;
-        &lt;li&gt;Vertex shader pushes the vertices outwards using the full quad UV based on the second texture’s R channel.&lt;/li&gt;
-        &lt;li&gt;Vertex shader offsets the UV used for the tile’s icon.&lt;/li&gt;
-        &lt;li&gt;Fragment shader takes the RGB channels in the first texture, and blends the icon image on top of the color using the A channel for the icon’s opacity.&lt;/li&gt;
-        &lt;li&gt;Now I have a maximum grid size of 64×64. This could be easily expanded, but it was already significantly more than I had planned to use.&lt;/li&gt;
-        &lt;li&gt;Now if I wanted a 64×64 grid I would not need to resize 4096 quads, change their materials, and render each of them individually. I needed to (partially) update two 64×64 textures and render a single object.&lt;/li&gt;
-        &lt;li&gt;Have not had a single slowdown since I made this change.&lt;/li&gt;
-        &lt;li&gt;Internally keep three copies of each of the data textures. One as the actual pixel data. The others as my to*from interpolation data. I used the blue and alpha channels in the vertex data texture to store interpolation delay and interpolation time. This greatly simplified the data I needed to keep around.&lt;/li&gt;
-        &lt;li&gt;Assuming 4 bytes per pixel in my data textures, and saving 6 64×64 Color arrays, it would put me at 6×16,384 bytes for a total of 98,304 bytes. That’s less than 100kb for all of my grid data. Considering I had some pretty serious memory allocation issues while using DOTween for all of my tiles, and that this solution is entirely free of allocation after the initial arrays, I’d say that’s a pretty great gain.
-        https://docs.unity3d.com/Manual/SL*DataTypesAndPrecision.html&lt;/li&gt;
-        &lt;/ul&gt;
+        &lt;p&gt;Due to the way Unity renders its UGUI system in the order in which its transforms are laid out, every scaling tile would be drawn over by any tile after it. To fix this, instead of messing with the render order for each &lt;code&gt;CanvasRenderer&lt;/code&gt; component, I hacked it together by reordering all animating tiles to be the last children of their parent. Unfortunately this caused a lot of memory being shuffled around every time I did this. I didn’t do it every frame, only&lt;/p&gt;
+        &lt;h3 id=&quot;individual-quads-the-batching-nightmare&quot;&gt;Individual Quads; the batching nightmare.&lt;/h3&gt;
+        &lt;h3 id=&quot;garbage-collection&quot;&gt;Garbage Collection!&lt;/h3&gt;
+        &lt;h3 id=&quot;single-mesh-the-solution&quot;&gt;Single mesh; the solution.&lt;/h3&gt;
       </content>
     </entry>
     <entry>
@@ -115,11 +103,13 @@
       <content type="html">&lt;p&gt;You’ll find this post in your &lt;code&gt;_posts&lt;/code&gt; directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run &lt;code&gt;jekyll serve&lt;/code&gt;, which launches a web server and auto-regenerates your site when a file is updated.&lt;/p&gt;
         &lt;p&gt;To add new posts, simply add a file in the &lt;code&gt;_posts&lt;/code&gt; directory that follows the convention &lt;code&gt;YYYY-MM-DD-name-of-post.ext&lt;/code&gt; and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.&lt;/p&gt;
         &lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
-        &lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;figure class=&quot;highlight&quot;&gt;
+        &lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
         &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;Hi, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;Tom&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints &amp;#39;Hi, Tom&amp;#39; to STDOUT.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+        &lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints &amp;#39;Hi, Tom&amp;#39; to STDOUT.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+        &lt;/figure&gt;
         &lt;p&gt;Check out the &lt;a href=&quot;https://jekyllrb.com/docs/home&quot;&gt;Jekyll docs&lt;/a&gt; for more info on how to get the most out of Jekyll. File all bugs/feature requests at &lt;a href=&quot;https://github.com/jekyll/jekyll&quot;&gt;Jekyll’s GitHub repo&lt;/a&gt;. If you have questions, you can ask them on &lt;a href=&quot;https://talk.jekyllrb.com/&quot;&gt;Jekyll Talk&lt;/a&gt;.&lt;/p&gt;
       </content>
     </entry>

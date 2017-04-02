@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/public/css/poole.css">
     <link rel="stylesheet" href="/public/css/syntax.css">
     <link rel="stylesheet" href="/public/css/hyde.css">
+    <link rel="stylesheet" href="/public/css/custom.css">
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface|Roboto">
     <!-- Icons -->
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/public/apple-touch-icon-144-precomposed.png">
@@ -26,7 +27,7 @@
         <div class="sidebar-about">
           <h1>
             <a href="/">
-              <img src="/assets/img/triangulated_face.png">
+              <img src="/assets/img/triangulated_face_glasses.png">
             </a>
             <a href="/">
               Mick Derks
@@ -50,7 +51,35 @@
         <p>I’ve been working on <a href="projects/flood">Flood</a> for a few weeks now. It’s been fun to finally call something complete and actually be proud of it. It means I can tell people I’m a game developer and not feel like an abysmal failure because I’ve got nothing to show them.</p>
         <p>The project started as something simple but very polished that I can use as a portfolio piece.
           Because of this I consider the game’s performance to be incredibly important. This meant that after the initial prototype was complete I’ve made several performance passes on the game.</p>
-        <p>Development was done partially on my desktop and laptop. Both are, needless to say, generally significantly more powerful than pretty much any phone.</p>
+        <div class="right-extending">
+          <table>
+            <thead>
+              <tr>
+                <th>Parts</th>
+                <th>Desktop</th>
+                <th>Laptop</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CPU</td>
+                <td>i5-3570k</td>
+                <td>i7-4710MQ</td>
+              </tr>
+              <tr>
+                <td>RAM</td>
+                <td>16GB</td>
+                <td>8GB</td>
+              </tr>
+              <tr>
+                <td>GPU</td>
+                <td>R9 380</td>
+                <td>GTX 860M</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Development was done partially on my desktop and laptop. Both are generally significantly most powerful than even the most high-end phones, not to mention the average phone, so during development I did not have any real performance issues for the most part. However, performance dropped off a cliff when I initially started testing on mobile.</p>
         <table>
           <thead>
             <tr>
@@ -63,7 +92,7 @@
           <tbody>
             <tr>
               <td>24x24</td>
-              <td>~5fps</td>
+              <td>&lt;5fps</td>
               <td>20-60fps</td>
               <td>60fps</td>
             </tr>
@@ -75,61 +104,21 @@
             </tr>
           </tbody>
         </table>
+        <p>Initially I had capped the grid size at 24x24, but during the initial rounds of testing I got requests to increase this number. Unfortunately, when I first tried to bump it up to 36x36 it just ground to a halt. This was my cue to invest some serious time and effort into getting used to Unity’s profiling tools.</p>
+        <h3 id="unity-ui-grid-the-naive-approach">Unity UI Grid; the naive approach.</h3>
+        <p>A quick note on my initial prototyping approach. It was all done in UGUI. Now, I knew this wasn’t a great solution, but it worked.</p>
+        <p>On a 24x24 grid that meant 576 tiles. Each tile had a sprite for color (and possible texture), and a sprite for the overlayed icon. Every child was tweened separately using the truly wonderful <a href="http://dotween.demigiant.com/">DOTween</a>. I didn’t actually profile this approach thoroughly before I scrapped and rewrote it, but just rendering alone ran into performance issues on my desktop. After watching <a href="https://www.youtube.com/watch?v=n*oZa4Fb12U">this Unite 2016 presentation by Ian Dundore</a> I realised just how poorly optimized this approach was.</p>
         <ul>
-          <li>Game ran more or less fine on desktop</li>
-          <li>After some minor optimizations it ran acceptably on mobile</li>
-          <li>Worst case scenario on Samsung Galaxy S4 Active ran around 25-30fps when animating almost every tile in the grid.</li>
-          <li>Initial feedback asked for bigger grid sizes.</li>
-          <li>Simply trying a bigger size broke down immediately. 36×36 ran at ~8fps when stationary.</li>
-          <li>Took some time to get a grip on my profiling options.</li>
-          <li>Ran with around ~1300 draw calls on a 36x36 grid.</li>
+          <li>Everything was done in UGUI, and all in the same canvas.</li>
         </ul>
-        <h3 id="unity-ui-grid">Unity UI grid</h3>
+        <p>I didn’t know exactly how big of a deal this was until I watched that presentation. But after that I realised that every time I changed those transforms it would rebuild the entire canvas. That meant every UI element, but more importantly that meant that on a 24x24 grid all 576 tiles would also be rebuilt. I thought, when writing it, that changing a recttransform’s scale was not included in this. I was wrong. My entire canvas was rebuilt every single frame anything happened at all.</p>
         <ul>
-          <li>Grid of sprites.</li>
-          <li>Performance issues even at 24x24 on desktop.</li>
-          <li>Tried optimizing it a bit after watching <a href="https://www.youtube.com/watch?v=n*oZa4Fb12U">this Unite 2016 presentation by Ian Dundore.</a></li>
-          <li>Changing sibling index to change render order is a bad idea. I suspect changing the renderer’s sort order would be a lot quicker, but I haven’t tried this. I doubt it’s good enough to make this approach viable as it suffers from the same problem as the next approach.</li>
-          <li>Replaced very early on.</li>
+          <li>Render order problems were ‘handled’ by setting sibling index to last.</li>
         </ul>
-        <h3 id="grid-of-tweened-quads">Grid of Tweened quads.</h3>
-        <ul>
-          <li>Grid of quads.</li>
-          <li><a href="http://dotween.demigiant.com/">Resized using the excellent DOTween</a></li>
-          <li>Tile color, icon opacity, icon index, all set through a <a href="https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html"><code>MaterialPropertyBlock</code></a>.</li>
-          <li>Worked fine on desktop.</li>
-          <li>Broke down completely on mobile.</li>
-          <li>1000-2000 draw calls on desktop is on the high end, but it’ll run fine most of the time.</li>
-          <li>1000 draw calls on mobile and it’ll grind to a halt in a heartbeat.</li>
-          <li>Tweening colors on 1296 tiles, delayed a bit based on position means little to no batching.</li>
-        </ul>
-        <h3 id="memory-allocation">Memory allocation.</h3>
-        <ul>
-          <li>Stable framerates would maybe be acceptable.</li>
-          <li>Large amounts of garbage created by DOTween usage as well as string manipulation.</li>
-          <li>Ended up with 20ms+ garbage collection spikes.</li>
-          <li>Became less lazy with strings. Only changed them when actually needed instead of just creating them from scratch every frame.</li>
-          <li>Not sure if large allocation numbers were something exclusive to the Unity editor, if they were down to the ancient version of Mono used by Unity, or if the few strings manipulated each frame really do have such a massive impact even in modern C#.</li>
-          <li>Not uncommon for the editor profiler being not very accurate or useful.</li>
-          <li>Single <code>Debug.Log()</code> calls showing as taking 10ms+ in the editor does not sound accurate at all.</li>
-        </ul>
-        <h3 id="single-mesh">Single mesh.</h3>
-        <ul>
-          <li>Single static mesh. All of the original quads merged into a single mesh.</li>
-          <li>Two UV channels. One where each quad is the full 0<em>1 UV space. One where each quad is a point in UV space, positioned as if the 0</em>1 UV space were a 64×64 grid and the point is the tile’s coordinate.</li>
-          <li>Custom shader that takes 3 textures. One icon spritesheet. Two 64×64 data textures.</li>
-          <li>One data texture for the fragment data that defines the tile’s RGB color as well as the icon’s opacity in the A channel.</li>
-          <li>Another data texture for the vertex data that defines the tile’s size in the R channel, and the x offset for the icon sprite UV’s to display the correct icon.</li>
-          <li>Vertex shader pushes the vertices outwards using the full quad UV based on the second texture’s R channel.</li>
-          <li>Vertex shader offsets the UV used for the tile’s icon.</li>
-          <li>Fragment shader takes the RGB channels in the first texture, and blends the icon image on top of the color using the A channel for the icon’s opacity.</li>
-          <li>Now I have a maximum grid size of 64×64. This could be easily expanded, but it was already significantly more than I had planned to use.</li>
-          <li>Now if I wanted a 64×64 grid I would not need to resize 4096 quads, change their materials, and render each of them individually. I needed to (partially) update two 64×64 textures and render a single object.</li>
-          <li>Have not had a single slowdown since I made this change.</li>
-          <li>Internally keep three copies of each of the data textures. One as the actual pixel data. The others as my to*from interpolation data. I used the blue and alpha channels in the vertex data texture to store interpolation delay and interpolation time. This greatly simplified the data I needed to keep around.</li>
-          <li>Assuming 4 bytes per pixel in my data textures, and saving 6 64×64 Color arrays, it would put me at 6×16,384 bytes for a total of 98,304 bytes. That’s less than 100kb for all of my grid data. Considering I had some pretty serious memory allocation issues while using DOTween for all of my tiles, and that this solution is entirely free of allocation after the initial arrays, I’d say that’s a pretty great gain.
-            https://docs.unity3d.com/Manual/SL*DataTypesAndPrecision.html</li>
-        </ul>
+        <p>Due to the way Unity renders its UGUI system in the order in which its transforms are laid out, every scaling tile would be drawn over by any tile after it. To fix this, instead of messing with the render order for each <code>CanvasRenderer</code> component, I hacked it together by reordering all animating tiles to be the last children of their parent. Unfortunately this caused a lot of memory being shuffled around every time I did this. I didn’t do it every frame, only</p>
+        <h3 id="individual-quads-the-batching-nightmare">Individual Quads; the batching nightmare.</h3>
+        <h3 id="garbage-collection">Garbage Collection!</h3>
+        <h3 id="single-mesh-the-solution">Single mesh; the solution.</h3>
       </div>
       <div class="related">
         <h2>Related Posts</h2>

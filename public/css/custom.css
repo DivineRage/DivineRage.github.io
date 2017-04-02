@@ -1,0 +1,26 @@
+
+/* Small screens, inline */
+.right-extending {
+    float: right;
+    margin-left: 1em;
+}
+/* Big screens, excessive space on the right */
+@media(min-width: 95em) {
+    .right-extending {
+        float:right;
+        position:absolute;
+        margin-left:38em;
+    }
+}
+
+/*
+.right-extending-container {
+    float: right;
+    margin-left: 1em;
+}
+.right-extending {
+    overflow:hidden;
+    margin-bottom: -100%;
+    margin-right:-50%;
+}
+*/
