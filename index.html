@@ -47,6 +47,97 @@
       <div class="posts">
         <div class="post">
           <h1 class="post-title">
+            <a href="/blog/2017/04/02/unity-android-optimization-retrospective/">
+              Unity Android * An optimization retrospective
+            </a>
+          </h1>
+          <span class="post-date">02 Apr 2017</span>
+          <p>I’ve been working on <a href="projects/flood">Flood</a> for a few weeks now. It’s been fun to finally call something complete and actually be proud of it. It means I can tell people I’m a game developer and not feel like an abysmal failure because I’ve got nothing to show them.</p>
+          <p>The project started as something simple but very polished that I can use as a portfolio piece.
+            Because of this I consider the game’s performance to be incredibly important. This meant that after the initial prototype was complete I’ve made several performance passes on the game.</p>
+          <p>Development was done partially on my desktop and laptop. Both are, needless to say, generally significantly more powerful than pretty much any phone.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Grid Size</th>
+                <th>UGUI</th>
+                <th>Individual Quads</th>
+                <th>Single Static Mesh</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>24x24</td>
+                <td>~5fps</td>
+                <td>20-60fps</td>
+                <td>60fps</td>
+              </tr>
+              <tr>
+                <td>36x36</td>
+                <td>-</td>
+                <td>5-10fps</td>
+                <td>60fps</td>
+              </tr>
+            </tbody>
+          </table>
+          <ul>
+            <li>Game ran more or less fine on desktop</li>
+            <li>After some minor optimizations it ran acceptably on mobile</li>
+            <li>Worst case scenario on Samsung Galaxy S4 Active ran around 25-30fps when animating almost every tile in the grid.</li>
+            <li>Initial feedback asked for bigger grid sizes.</li>
+            <li>Simply trying a bigger size broke down immediately. 36×36 ran at ~8fps when stationary.</li>
+            <li>Took some time to get a grip on my profiling options.</li>
+            <li>Ran with around ~1300 draw calls on a 36x36 grid.</li>
+          </ul>
+          <h3 id="unity-ui-grid">Unity UI grid</h3>
+          <ul>
+            <li>Grid of sprites.</li>
+            <li>Performance issues even at 24x24 on desktop.</li>
+            <li>Tried optimizing it a bit after watching <a href="https://www.youtube.com/watch?v=n*oZa4Fb12U">this Unite 2016 presentation by Ian Dundore.</a></li>
+            <li>Changing sibling index to change render order is a bad idea. I suspect changing the renderer’s sort order would be a lot quicker, but I haven’t tried this. I doubt it’s good enough to make this approach viable as it suffers from the same problem as the next approach.</li>
+            <li>Replaced very early on.</li>
+          </ul>
+          <h3 id="grid-of-tweened-quads">Grid of Tweened quads.</h3>
+          <ul>
+            <li>Grid of quads.</li>
+            <li><a href="http://dotween.demigiant.com/">Resized using the excellent DOTween</a></li>
+            <li>Tile color, icon opacity, icon index, all set through a <a href="https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html"><code>MaterialPropertyBlock</code></a>.</li>
+            <li>Worked fine on desktop.</li>
+            <li>Broke down completely on mobile.</li>
+            <li>1000-2000 draw calls on desktop is on the high end, but it’ll run fine most of the time.</li>
+            <li>1000 draw calls on mobile and it’ll grind to a halt in a heartbeat.</li>
+            <li>Tweening colors on 1296 tiles, delayed a bit based on position means little to no batching.</li>
+          </ul>
+          <h3 id="memory-allocation">Memory allocation.</h3>
+          <ul>
+            <li>Stable framerates would maybe be acceptable.</li>
+            <li>Large amounts of garbage created by DOTween usage as well as string manipulation.</li>
+            <li>Ended up with 20ms+ garbage collection spikes.</li>
+            <li>Became less lazy with strings. Only changed them when actually needed instead of just creating them from scratch every frame.</li>
+            <li>Not sure if large allocation numbers were something exclusive to the Unity editor, if they were down to the ancient version of Mono used by Unity, or if the few strings manipulated each frame really do have such a massive impact even in modern C#.</li>
+            <li>Not uncommon for the editor profiler being not very accurate or useful.</li>
+            <li>Single <code>Debug.Log()</code> calls showing as taking 10ms+ in the editor does not sound accurate at all.</li>
+          </ul>
+          <h3 id="single-mesh">Single mesh.</h3>
+          <ul>
+            <li>Single static mesh. All of the original quads merged into a single mesh.</li>
+            <li>Two UV channels. One where each quad is the full 0<em>1 UV space. One where each quad is a point in UV space, positioned as if the 0</em>1 UV space were a 64×64 grid and the point is the tile’s coordinate.</li>
+            <li>Custom shader that takes 3 textures. One icon spritesheet. Two 64×64 data textures.</li>
+            <li>One data texture for the fragment data that defines the tile’s RGB color as well as the icon’s opacity in the A channel.</li>
+            <li>Another data texture for the vertex data that defines the tile’s size in the R channel, and the x offset for the icon sprite UV’s to display the correct icon.</li>
+            <li>Vertex shader pushes the vertices outwards using the full quad UV based on the second texture’s R channel.</li>
+            <li>Vertex shader offsets the UV used for the tile’s icon.</li>
+            <li>Fragment shader takes the RGB channels in the first texture, and blends the icon image on top of the color using the A channel for the icon’s opacity.</li>
+            <li>Now I have a maximum grid size of 64×64. This could be easily expanded, but it was already significantly more than I had planned to use.</li>
+            <li>Now if I wanted a 64×64 grid I would not need to resize 4096 quads, change their materials, and render each of them individually. I needed to (partially) update two 64×64 textures and render a single object.</li>
+            <li>Have not had a single slowdown since I made this change.</li>
+            <li>Internally keep three copies of each of the data textures. One as the actual pixel data. The others as my to*from interpolation data. I used the blue and alpha channels in the vertex data texture to store interpolation delay and interpolation time. This greatly simplified the data I needed to keep around.</li>
+            <li>Assuming 4 bytes per pixel in my data textures, and saving 6 64×64 Color arrays, it would put me at 6×16,384 bytes for a total of 98,304 bytes. That’s less than 100kb for all of my grid data. Considering I had some pretty serious memory allocation issues while using DOTween for all of my tiles, and that this solution is entirely free of allocation after the initial arrays, I’d say that’s a pretty great gain.
+              https://docs.unity3d.com/Manual/SL*DataTypesAndPrecision.html</li>
+          </ul>
+        </div>
+        <div class="post">
+          <h1 class="post-title">
             <a href="/test/2017/04/01/test-page-1/">
               What's this?
             </a>
