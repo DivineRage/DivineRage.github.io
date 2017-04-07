@@ -1,0 +1,28 @@
+
+
+
+
+
+
+
+
+
+.content {
+  
+}
+
+@media(min-width: 48em) {
+  .content {
+    margin-left:22em;
+    margin-right:4em;
+    max-width:48em;
+  }
+}
+
+
+
+
+
+
+
+
