@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <link href="http://gmpg.org/xfn/11" rel="profile">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <!-- Enable responsiveness on mobile devices-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <title>
+      Unity Android - An optimization retrospective &middot; Mick Derks
+    </title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="/assets/css/poole.css">
+    <link rel="stylesheet" href="/assets/css/syntax.css">
+    <link rel="stylesheet" href="/assets/css/hyde.css">
+    <link rel="stylesheet" href="/assets/css/custom.css">
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface|Roboto">
+    <!-- Icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/assets/img/apple-touch-icon-144-precomposed.png">
+    <link rel="shortcut icon" href="/assets/img/favicon.ico">
+    <!-- RSS -->
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="container sidebar-sticky">
+        <div class="sidebar-about">
+          <h1>
+            <a href="/">
+              <img src="/assets/img/triangulated_face_glasses.png">
+            </a>
+            <a href="/">
+              Mick Derks
+            </a>
+          </h1>
+          <p class="lead">Game Developer, Programmer, Nerd.</p>
+        </div>
+        <nav class="sidebar-nav">
+          <!--
+      <a class="sidebar-nav-item" href="/">Home</a>
+      -->
+          <a class="sidebar-nav-item" href="/blog">Blog</a>
+          <a class="sidebar-nav-item" href="/about">About</a>
+          <p class="category">Projects</p>
+          <a class="sidebar-nav-item" href="/projects/flood">Flood</a>
+          <!--
+      <br>
+      <br>
+      <p class="category">Other Pages</p>
+      
+      
+        
+          
+        
+      
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+            <a class="sidebar-nav-item" href="/projects/flood">Flood</a>
+          
+        
+      
+        
+          
+            <a class="sidebar-nav-item" href="/about">About</a>
+          
+        
+      
+      -->
+        </nav>
+      </div>
+      <div class="brand-icon">
+        <img src="/assets/img/logo_silicon_monolith.png">
+      </div>
+    </div>
+    <div class="content container">
+      <div class="post">
+        <h1 class="post-title">Unity Android - An optimization retrospective</h1>
+        <span class="post-date">02 Apr 2017</span>
+        <p>I’ve been working on <a href="/projects/flood">Flood</a> for a few weeks now. It’s been fun to finally call something complete and actually be proud of it. It means I can tell people I’m a game developer and not feel like an abysmal failure because I’ve got nothing to show them.</p>
+        <p>The project started as something simple that I could polish like crazy and use as a portfolio piece.
+          Because of this I consider the game’s performance to be incredibly important. As a result I’ve made several performance passes on the game after the initial prototype.</p>
+        <table class="right-extending">
+          <thead>
+            <tr>
+              <th>Parts</th>
+              <th>Desktop</th>
+              <th>Laptop</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>CPU</td>
+              <td>i5-7500</td>
+              <td>i7-4710MQ</td>
+            </tr>
+            <tr>
+              <td>RAM</td>
+              <td>16GB</td>
+              <td>8GB</td>
+            </tr>
+            <tr>
+              <td>GPU</td>
+              <td>R9 380</td>
+              <td>GTX 860M</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Development was done partially on my desktop and laptop. Both are significantly more powerful than even the most high-end phones, let alone your average phone, so during development I did not have any real performance issues for the most part. However, performance dropped off a cliff when I started testing on mobile the first time.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Grid Size</th>
+              <th>UGUI</th>
+              <th>Individual Quads</th>
+              <th>Single Static Mesh</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>24x24</td>
+              <td>&lt;5fps</td>
+              <td>20-60fps</td>
+              <td>60fps</td>
+            </tr>
+            <tr>
+              <td>36x36</td>
+              <td>-</td>
+              <td>5-10fps</td>
+              <td>60fps</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>This post is going to be mostly about my approaches to the game’s core gameplay element - the grid. The tiles in this grid could animate in size and color, but this could be turned off by the player. The colors used could be changed to accomodate people with color blindness, and to aid this each color also had an accompanying icon with adjustable opacity. The user could also change the grid size for every match.</p>
+        <p>Initially I had capped the grid size at 24x24, but some of the first testers I got requested I increase this number. 
+          Unfortunately, when I first tried to bump it up to 36x36 the game just ground to a halt. 
+          This was my cue to invest some serious time and effort into getting used to Unity’s profiling tools.</p>
+        <h2 id="unity-ui-grid-the-naive-approach">Unity UI Grid; the naive approach.</h2>
+        <p>My initial prototype was entire done with UGUI.</p>
+        <p>Yeah…</p>
+        <p>I knew from the start that I would most likely end up redoing most of my initial prototype. And don’t get me wrong. UGUI is awesome. It’s just in no way intended to deal with the things I asked of it. Of course it’s perfect for the game’s UI, but implementing the grid in UGUI is a terrible idea. Let me explain why.</p>
+        <p>Consider the following situation;</p>
+        <ul>
+          <li>We’re using a 24x24 grid of tiles. That’s 576 transforms.</li>
+          <li>Each tile had a sprite for color (and possible texture), and a sprite for the overlayed icon.</li>
+          <li>Using a custom layout component to position all tiles in a grid of specific dimensions.</li>
+          <li>Every child was animated separately using the truly wonderful <a href="http://dotween.demigiant.com/">DOTween</a>.</li>
+        </ul>
+        <p>I felt early on that this approach would become a problem, and I would not get the desired control over layout and rendering to optimize it to a point I deemed acceptable. I did not profile this thoroughly at the time. I just noticed some very significant stuttering (on desktop!) whenever I pressed a new color. I opened up the profiler, and it showed 10+ms spikes that grew to 60+ms spikes every time the grid was changing color.</p>
+        <p><img src="/assets/img/blogposts/unity-android-optimization-retrospective/profiler_flood_ugui_rebuild.png" alt="alt text" title="Average Canvas rebuild time." /></p>
+        <p>After watching <a href="https://www.youtube.com/watch?v=n-oZa4Fb12U">this brilliant Unite 2016 presentation by Ian Dundore</a> about content optimization I realised just how poorly optimized this approach was.</p>
+        <div class="videoWrapper">
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/n-oZa4Fb12U" frameborder="0" allowfullscreen=""></iframe>
+        </div>
+        <ul>
+          <li>
+            <h4 id="everything-was-done-in-a-single-canvas">Everything was done in a single canvas.</h4>
+          </li>
+        </ul>
+        <p>I didn’t know exactly how big of a deal this was until I watched that presentation. Every time I changed a transform inside of a Canvas it would rebuild the entire canvas. That meant every UI element, and on a 24x24 grid all 576 tiles would be rebuilt. I thought, when writing it, that changing a recttransform’s scale was not included in this. I was wrong. <em>My entire canvas geometry was rebuilt every single frame anything happened at all.</em></p>
+        <p>That’s pretty bad for performance.</p>
+        <ul>
+          <li>
+            <h4 id="render-order-problems-were-handled-by-setting-sibling-index-to-last">Render order problems were ‘handled’ by setting sibling index to last.</h4>
+          </li>
+        </ul>
+        <p>UGUI renders transform in the order they are arranged in the hierarchy. Because of this, every scaling tile would be drawn over by any tile after it. To fix this, instead of messing with the render order for each <code>CanvasRenderer</code> component, I hacked it together by reordering all animating tiles to be the last children of their parent. Unfortunately this caused a lot of memory being shuffled around every time I did this. I didn’t do this every frame, only when you pressed a new color, but it still had some serious frametime spikes.</p>
+        <ul>
+          <li>
+            <h4 id="ugui-is-rendered-completely-as-transparent-geometry">UGUI is rendered completely as transparent geometry.</h4>
+          </li>
+        </ul>
+        <p>This meant overdraw. Lots of it. Everything is rendered and nothing is culled. Your desktop GPU can handle a good amount of transparent rendering. Unfortunately, mobile GPUs are not quite as powerful when it comes to fill rates. My approach of having a separate sprite for the color+texture and a separate sprite for the icon meant every pixel was rendered to with transparency at least 3 times (including the game’s background). On your average phone this is pretty taxing.</p>
+        <p>Now, the draw call count for the entire game was hovering between 10-20 most of the time. It’s a good thing Unity is pretty good at batching UGUI elements so I don’t have to deal with a draw call for each sprite in the grid…</p>
+        <h2 id="individual-quads-the-batching-nightmare">Individual Quads; the batching nightmare.</h2>
+        <p>My first <em>real</em> implementation of the grid used a single quad for each tile, with a custom shader to blend in the icon on top. The changes to a tile’s material were handled by assigning <code>MaterialPropertyBlock</code> objects to each quad’s renderer every frame they were changed.</p>
+        <p>All animations were done using <a href="http://dotween.demigiant.com/">DOTween</a>. The transforms were scaled using their <code>localScale</code>. Their colors and icons were assigned to the <code>MaterialPropertyBlock</code></p>
+        <blockquote class="right-extending-inline">
+          <p>One thing I realised as I was writing this post is that I should have changed the icon opacity to a uniform. Its value is the same for every object using this shader. That’s pretty much what uniforms are for.</p>
+        </blockquote>
+        <figure class="highlight">
+          <pre><code class="language-c#" data-lang="c#"><span></span><span class="n">Properties</span>
+<span class="p">{</span>
+    <span class="n">_Color</span><span class="p">(</span><span class="s">&quot;Color&quot;</span><span class="p">,</span> <span class="n">Color</span><span class="p">)</span> <span class="p">=</span> <span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">)</span>
+    <span class="n">_MainTex</span><span class="p">(</span><span class="s">&quot;Icon Sheet&quot;</span><span class="p">,</span> <span class="m">2D</span><span class="p">)</span> <span class="p">=</span> <span class="s">&quot;white&quot;</span> <span class="p">{}</span>
+    <span class="n">_IconIndex</span><span class="p">(</span><span class="s">&quot;Icon Index&quot;</span><span class="p">,</span> <span class="n">Int</span><span class="p">)</span> <span class="p">=</span> <span class="m">0</span>
+    <span class="n">_IconOpacity</span> <span class="p">(</span><span class="s">&quot;Icon Opacity&quot;</span><span class="p">,</span> <span class="n">Range</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">1</span><span class="p">))</span> <span class="p">=</span> <span class="p">.</span><span class="m">25</span>
+<span class="p">}</span></code></pre>
+        </figure>
+        <figure class="highlight">
+          <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="n">v2f</span> <span class="n">vert</span> <span class="p">(</span><span class="n">appdata</span> <span class="n">v</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">v2f</span> <span class="n">o</span><span class="p">;</span>
+    <span class="n">o</span><span class="p">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="n">UnityObjectToClipPos</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">vertex</span><span class="p">);</span>
+    <span class="n">o</span><span class="p">.</span><span class="n">uv</span> <span class="o">=</span> <span class="n">float2</span><span class="p">((</span><span class="n">v</span><span class="p">.</span><span class="n">uv</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="mf">.125</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mf">.125</span> <span class="o">*</span> <span class="n">_IconIndex</span><span class="p">),</span> <span class="n">v</span><span class="p">.</span><span class="n">uv</span><span class="p">.</span><span class="n">y</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">o</span><span class="p">;</span>
+<span class="p">}</span></code></pre>
+        </figure>
+        <figure class="highlight">
+          <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="n">fixed4</span> <span class="n">frag</span> <span class="p">(</span><span class="n">v2f</span> <span class="n">i</span><span class="p">)</span> <span class="o">:</span> <span class="n">SV_Target</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">_Color</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">tex2D</span><span class="p">(</span><span class="n">_MainTex</span><span class="p">,</span> <span class="n">i</span><span class="p">.</span><span class="n">uv</span><span class="p">)</span> <span class="o">*</span> <span class="n">_IconOpacity</span><span class="p">));</span>
+<span class="p">}</span></code></pre>
+        </figure>
+        <p>https://blogs.unity3d.com/2017/04/03/how-to-see-why-your-draw-calls-are-not-batched-in-5-6/</p>
+        <h2 id="garbage-collection">Garbage Collection!</h2>
+        <p><em>Talk about profiling differences in editor and standalone.</em></p>
+        <h2 id="single-mesh-the-solution">Single mesh; the solution.</h2>
+        <p><em>TODO: Actually get rid of properties! Uniforms all the way!</em></p>
+        <p><em>Talk about parts of this at a time? First vert then frag probably?</em></p>
+        <figure class="highlight">
+          <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="n">v2f</span> <span class="n">vert</span> <span class="p">(</span><span class="n">appdata</span> <span class="n">v</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">v2f</span> <span class="n">o</span><span class="p">;</span>
+    <span class="n">float4</span> <span class="n">vertData</span> <span class="o">=</span> <span class="n">tex2Dlod</span><span class="p">(</span><span class="n">_DataVert</span><span class="p">,</span> <span class="n">float4</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">uv1</span><span class="p">.</span><span class="n">xy</span><span class="p">,</span> <span class="mo">0</span><span class="p">,</span> <span class="mo">0</span><span class="p">));</span>
+    <span class="k">float</span> <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">vertData</span><span class="p">.</span><span class="n">r</span> <span class="o">*</span> <span class="mf">.2</span><span class="n">f</span><span class="p">);</span>
+    <span class="n">v</span><span class="p">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">vertex</span> <span class="o">+</span> <span class="n">float4</span><span class="p">(((</span><span class="n">v</span><span class="p">.</span><span class="n">uv0</span> <span class="o">-</span> <span class="n">float2</span><span class="p">(</span><span class="mf">.5</span><span class="p">,</span> <span class="mf">.5</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">size</span><span class="p">)).</span><span class="n">xy</span><span class="p">,</span> <span class="o">-</span><span class="n">size</span><span class="p">,</span> <span class="mo">0</span><span class="p">);</span>
+    <span class="n">o</span><span class="p">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="n">UnityObjectToClipPos</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">vertex</span><span class="p">);</span>
+    <span class="n">o</span><span class="p">.</span><span class="n">uv0</span> <span class="o">=</span> <span class="n">float2</span><span class="p">((</span><span class="n">v</span><span class="p">.</span><span class="n">uv0</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="mf">.125</span><span class="p">)</span> <span class="o">+</span> <span class="n">vertData</span><span class="p">.</span><span class="n">g</span><span class="p">,</span> <span class="n">v</span><span class="p">.</span><span class="n">uv0</span><span class="p">.</span><span class="n">y</span><span class="p">);</span>
+    <span class="n">o</span><span class="p">.</span><span class="n">uv1</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">uv1</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">o</span><span class="p">;</span>
+<span class="p">}</span></code></pre>
+        </figure>
+        <figure class="highlight">
+          <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="n">fixed4</span> <span class="n">frag</span> <span class="p">(</span><span class="n">v2f</span> <span class="n">i</span><span class="p">)</span> <span class="o">:</span> <span class="n">SV_Target</span>
+<span class="p">{</span>
+    <span class="n">float4</span> <span class="n">fragData</span> <span class="o">=</span> <span class="n">tex2D</span><span class="p">(</span><span class="n">_DataFrag</span><span class="p">,</span> <span class="n">i</span><span class="p">.</span><span class="n">uv1</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fixed4</span><span class="p">(</span><span class="n">fragData</span><span class="p">.</span><span class="n">rgb</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">tex2D</span><span class="p">(</span><span class="n">_IconSheet</span><span class="p">,</span> <span class="n">i</span><span class="p">.</span><span class="n">uv0</span><span class="p">)</span> <span class="o">*</span> <span class="n">fragData</span><span class="p">.</span><span class="n">a</span><span class="p">));</span>
+<span class="p">}</span></code></pre>
+        </figure>
+        <h2 id="dont-stop-there">Don’t stop there!</h2>
+        <p><em>60fps on mobile may still mean barely 60fps. Battery usage may suffer if it’s still struggling so much.</em></p>
+      </div>
+      <div class="related">
+        <h2>Related Posts</h2>
+        <ul class="related-posts">
+          <li>
+            <h3>
+              <a href="/blog/testpage6">
+                Test6
+                <small>01 Apr 2017</small>
+              </a>
+            </h3>
+          </li>
+          <li>
+            <h3>
+              <a href="/blog/testpage5">
+                Test5
+                <small>01 Apr 2017</small>
+              </a>
+            </h3>
+          </li>
+          <li>
+            <h3>
+              <a href="/blog/testpage4">
+                Test4
+                <small>01 Apr 2017</small>
+              </a>
+            </h3>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>
