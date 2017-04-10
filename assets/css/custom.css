@@ -134,13 +134,24 @@
   align-items: flex-end;
 }
 .frontpage-element-title {
-  background-color:#202020C0;
+  background-color:rgba(32,32,32,.85);
   left:0px;
   width:100%;
   padding:1em;
   margin:0;
 
-  color: rgba(255,255,255,.75);
+  color: rgba(255,255,255,1);
   font-size: 48px;
   line-height: 64px;
+}
+.frontpage-element-title p {
+  margin-bottom:-.5em;
+}
+.frontpage-element-title a {
+  margin:0;
+}
+.frontpage-element-subtitle {
+  color: rgba(128,128,128,.75);
+  font-size: 18px;
+  line-height: 18px;
 }
