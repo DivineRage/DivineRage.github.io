@@ -16,8 +16,23 @@
     <link rel="stylesheet" href="/assets/css/custom.css">
     <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface|Roboto">
     <!-- Icons -->
-    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/assets/img/apple-touch-icon-144-precomposed.png">
-    <link rel="shortcut icon" href="/assets/img/favicon.ico">
+    <link rel="apple-touch-icon" sizes="57x57" href="/assets/img/icons/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/assets/img/icons/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/assets/img/icons/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/assets/img/icons/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/assets/img/icons/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/assets/img/icons/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/assets/img/icons/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/img/icons/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/icons/apple-icon-180x180.png">
+    <link rel="icon" type="image/assets/img/icons/png" sizes="192x192"  href="/assets/img/icons/android-icon-192x192.png">
+    <link rel="icon" type="image/assets/img/icons/png" sizes="32x32" href="/assets/img/icons/favicon-32x32.png">
+    <link rel="icon" type="image/assets/img/icons/png" sizes="96x96" href="/assets/img/icons/favicon-96x96.png">
+    <link rel="icon" type="image/assets/img/icons/png" sizes="16x16" href="/assets/img/icons/favicon-16x16.png">
+    <link rel="manifest" href="/assets/img/icons/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/assets/img/icons/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
     <!-- RSS -->
     <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
   </head>
@@ -86,9 +101,10 @@
       <div class="post">
         <h1 class="post-title">Unity Android - An optimization retrospective</h1>
         <span class="post-date">02 Apr 2017</span>
-        <p>I’ve been working on <a href="/projects/flood">Flood</a> for a few weeks now. It’s been fun to finally call something complete and actually be proud of it. It means I can tell people I’m a game developer and not feel like an abysmal failure because I’ve got nothing to show them.</p>
-        <p>The project started as something simple that I could polish like crazy and use as a portfolio piece.
+        <p>I’ve been working on <a href="/projects/flood">Flood</a> for a few weeks now. It’s been fun to finally call something complete and actually be proud of it. 
+          The project started as something simple that I could polish like crazy and use as a portfolio piece.
           Because of this I consider the game’s performance to be incredibly important. As a result I’ve made several performance passes on the game after the initial prototype.</p>
+        <p>I’m going to describe the iterations I’ve gone through, and what went right and wrong with each one.</p>
         <table class="right-extending">
           <thead>
             <tr>

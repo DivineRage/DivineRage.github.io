@@ -12,11 +12,11 @@
   margin-left: 1em;
 }
 /* Big screens, excessive space on the right */
-@media(min-width: 78em) {
+@media(min-width: 92em) {
   .right-extending {
     float:right;
     position:absolute;
-    margin-left:38em;
+    margin-left:42em;
     width:auto;
   }
 }
@@ -25,11 +25,11 @@
 .right-extending-inline {
 }
 /* Big screens, excessive space on the right */
-@media(min-width: 78em) {
+@media(min-width: 92em) {
   .right-extending-inline {
     float:right;
     position:absolute;
-    margin-left:38em;
+    margin-left:42em;
     width:auto;
     max-width:25em;
   }
