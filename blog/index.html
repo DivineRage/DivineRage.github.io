@@ -109,6 +109,56 @@
           <ul>
             <li>Starting off from work done on Flood <a href="/projects/flood">flood-optimization</a>, got inspired to do more work on the GPU</li>
           </ul>
+          <h2 id="generate-hex-column-meshes">Generate hex column meshes</h2>
+          <ul>
+            <li>Bundle many columns into one mesh.</li>
+            <li>6 sides, a cap on top.</li>
+            <li>LOD0: Beveled edges on all sides. Added center vertex with triangles out from that as a cap.</li>
+            <li>LOD1: No bevels, triangle fan as cap.</li>
+            <li>All vertices except the bottom loop weight painted as 1.</li>
+            <li>Unity’s Meshes have a limit of 65535 vertices.</li>
+            <li>To work with Unity’s LOD system, both LODs contained the same number of columns. Even though the vertex limit would have allowed LOD1 to contain many more columns.</li>
+            <li>Maximum size of a ‘chunk’ was 31x31 using LOD0 meshes.</li>
+            <li>
+              <p>Prefer to stick to power of 2 numbers for things like this. Decided on 16x16 instead.</p>
+            </li>
+            <li>I could have absolutely created these meshes in something like Blender. I didn’t. Mesh generation is fun.</li>
+          </ul>
+          <h2 id="vertex-displacement-in-surface-shaders">Vertex displacement in Surface shaders</h2>
+          <ul>
+            <li>Painful documentation.</li>
+            <li>Lack of flexibility in input structs.</li>
+            <li>Adding mysterious and poorly documented #pragma statements to fix shadow errors.</li>
+          </ul>
+          <h2 id="passing-data-from-compute-shaders">Passing data from Compute Shaders</h2>
+          <ul>
+            <li>Can easily share texture data between surface shader and compute shader.</li>
+          </ul>
+          <figure class="highlight">
+            <pre><code class="language-c#" data-lang="c#"><span></span><span class="n">ComputeShader</span> <span class="n">compute</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">computeKernelHandle</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+
+<span class="n">RenderTexture</span> <span class="n">renderTexture</span><span class="p">;</span>
+<span class="n">ComputeBuffer</span> <span class="n">renderTextureBuffer</span><span class="p">;</span>
+
+<span class="k">void</span> <span class="nf">Awake</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">renderTexture</span> <span class="p">=</span> <span class="k">new</span> <span class="n">RenderTexture</span><span class="p">(</span><span class="m">16</span><span class="p">,</span> <span class="m">16</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="n">RenderTextureFormat</span><span class="p">.</span><span class="n">ARGB32</span><span class="p">);</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">useMipMap</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">filterMode</span> <span class="p">=</span> <span class="n">FilterMode</span><span class="p">.</span><span class="n">Point</span><span class="p">;</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">enableRandomWrite</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">Create</span><span class="p">();</span>
+
+    <span class="n">compute</span> <span class="p">=</span> <span class="n">Resources</span><span class="p">.</span><span class="n">Load</span><span class="p">&lt;</span><span class="n">ComputeShader</span><span class="p">&gt;(</span><span class="s">&quot;ComputeShader&quot;</span><span class="p">);</span>
+    <span class="n">computeKernelHandle</span> <span class="p">=</span> <span class="n">compute</span><span class="p">.</span><span class="n">FindKernel</span><span class="p">(</span><span class="s">&quot;CSMain&quot;</span><span class="p">);</span>
+    <span class="n">compute</span><span class="p">.</span><span class="n">SetTexture</span><span class="p">(</span><span class="n">computeKernelHandle</span><span class="p">,</span> <span class="s">&quot;Result&quot;</span><span class="p">,</span> <span class="n">renderTexture</span><span class="p">);</span>
+
+    <span class="n">Shader</span><span class="p">.</span><span class="n">SetGlobalTexture</span><span class="p">(</span><span class="s">&quot;_renderTexture&quot;</span><span class="p">,</span> <span class="n">renderTexture</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">void</span> <span class="nf">OnDestroy</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">Release</span><span class="p">();</span>
+<span class="p">}</span></code></pre>
+          </figure>
         </div>
         <div class="post">
           <h1 class="post-title">
@@ -214,8 +264,8 @@
           <p>This meant overdraw. Lots of it. Everything is rendered and nothing is culled. Your desktop GPU can handle a good amount of transparent rendering. Unfortunately, mobile GPUs are not quite as powerful when it comes to fill rates. My approach of having a separate sprite for the color+texture and a separate sprite for the icon meant every pixel was rendered to with transparency at least 3 times (including the game’s background). On your average phone this is pretty taxing.</p>
           <p>Now, the draw call count for the entire game was hovering between 10-20 most of the time. It’s a good thing Unity is pretty good at batching UGUI elements so I don’t have to deal with a draw call for each sprite in the grid…</p>
           <h2 id="individual-quads-the-batching-nightmare">Individual Quads; the batching nightmare.</h2>
-          <p>My first <em>real</em> implementation of the grid used a single quad for each tile, with a custom shader to blend in the icon on top. The changes to a tile’s material were handled by assigning <code>MaterialPropertyBlock</code> objects to each quad’s renderer every frame they were changed.</p>
-          <p>All animations were done using <a href="http://dotween.demigiant.com/">DOTween</a>. The transforms were scaled using their <code>localScale</code>. Their colors and icons were assigned to the <code>MaterialPropertyBlock</code></p>
+          <p>My first <em>real</em> implementation of the grid used a single quad for each tile, blending in the icon inside of the shader. The changes to a tile’s material were handled by assigning <a href="https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html"><code>MaterialPropertyBlock</code></a> objects to each quad’s renderer every frame they were changed.
+            All animations were done using <a href="http://dotween.demigiant.com/">DOTween</a>. The transforms were scaled using their <code>localScale</code>. Their colors and icons were assigned to the <a href="https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html"><code>MaterialPropertyBlock</code></a> and applied every frame they had changed.</p>
           <blockquote class="right-extending-inline">
             <p>One thing I realised as I was writing this post is that I should have changed the icon opacity to a uniform. Its value is the same for every object using this shader. That’s pretty much what uniforms are for.</p>
           </blockquote>
@@ -228,6 +278,15 @@
     <span class="n">_IconOpacity</span> <span class="p">(</span><span class="s">&quot;Icon Opacity&quot;</span><span class="p">,</span> <span class="n">Range</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">1</span><span class="p">))</span> <span class="p">=</span> <span class="p">.</span><span class="m">25</span>
 <span class="p">}</span></code></pre>
           </figure>
+          <p>Now, most experienced Unity developers will probably be aware of the difference between a renderer’s <a href="https://docs.unity3d.com/ScriptReference/Renderer-material.html"><code>material</code></a> and <a href="https://docs.unity3d.com/ScriptReference/Renderer-sharedMaterial.html"><code>sharedMaterial</code></a> properties. As it says in their documentation. When changing a renderer’s <a href="https://docs.unity3d.com/ScriptReference/Renderer-material.html"><code>material</code></a> property, if it is used anywhere else it will clone the material and give that renderer a unique copy. When changing something on a renderer’s <a href="https://docs.unity3d.com/ScriptReference/Renderer-sharedMaterial.html"><code>sharedMaterial</code></a> property it will apply to every instance of that material.</p>
+          <p><a href="https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html"><code>MaterialPropertyBlock</code></a> acts like changing the <a href="https://docs.unity3d.com/ScriptReference/Renderer-material.html"><code>material</code></a> property, only without creating a new material instance. It makes it easy to use because you’re not dealing with all these material instances. Unfortunately, as you can read in a <a href="https://blogs.unity3d.com/2017/04/03/how-to-see-why-your-draw-calls-are-not-batched-in-5-6/">recent Unity blog</a>, it still breaks batching.</p>
+          <blockquote>
+            <p>Different Custom Properties — the object has a different MaterialProperyBlock set.</p>
+          </blockquote>
+          <p>When I wrote this approach I did not have a lot of experience with the performance impact of batching. On a desktop GPU you can easily get away with a few thousand draw calls without too many issues, and I’d never really ran into this limitation. The initial 24x24 grid ran poorly with 576 draw calls, but it was still playable. When I turned it up to 36x36 it idled at 10fps or below. The increase from 576 to 1296 draw calls crippled performance.</p>
+          <blockquote class="right-extending-inline">
+            <p>The ‘magic’ .125 value is used as an offset into the icon spritesheet. This sheet has 8 entries with the first one being empty, hence .125 or 1/8th.</p>
+          </blockquote>
           <figure class="highlight">
             <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="n">v2f</span> <span class="n">vert</span> <span class="p">(</span><span class="n">appdata</span> <span class="n">v</span><span class="p">)</span>
 <span class="p">{</span>
@@ -235,15 +294,12 @@
     <span class="n">o</span><span class="p">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="n">UnityObjectToClipPos</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">vertex</span><span class="p">);</span>
     <span class="n">o</span><span class="p">.</span><span class="n">uv</span> <span class="o">=</span> <span class="n">float2</span><span class="p">((</span><span class="n">v</span><span class="p">.</span><span class="n">uv</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="mf">.125</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mf">.125</span> <span class="o">*</span> <span class="n">_IconIndex</span><span class="p">),</span> <span class="n">v</span><span class="p">.</span><span class="n">uv</span><span class="p">.</span><span class="n">y</span><span class="p">);</span>
     <span class="k">return</span> <span class="n">o</span><span class="p">;</span>
-<span class="p">}</span></code></pre>
-          </figure>
-          <figure class="highlight">
-            <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="n">fixed4</span> <span class="n">frag</span> <span class="p">(</span><span class="n">v2f</span> <span class="n">i</span><span class="p">)</span> <span class="o">:</span> <span class="n">SV_Target</span>
+<span class="p">}</span>
+<span class="n">fixed4</span> <span class="n">frag</span> <span class="p">(</span><span class="n">v2f</span> <span class="n">i</span><span class="p">)</span> <span class="o">:</span> <span class="n">SV_Target</span>
 <span class="p">{</span>
     <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">_Color</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">tex2D</span><span class="p">(</span><span class="n">_MainTex</span><span class="p">,</span> <span class="n">i</span><span class="p">.</span><span class="n">uv</span><span class="p">)</span> <span class="o">*</span> <span class="n">_IconOpacity</span><span class="p">));</span>
 <span class="p">}</span></code></pre>
           </figure>
-          <p>https://blogs.unity3d.com/2017/04/03/how-to-see-why-your-draw-calls-are-not-batched-in-5-6/</p>
           <h2 id="garbage-collection">Garbage Collection!</h2>
           <p><em>Talk about profiling differences in editor and standalone.</em></p>
           <h2 id="single-mesh-the-solution">Single mesh; the solution.</h2>

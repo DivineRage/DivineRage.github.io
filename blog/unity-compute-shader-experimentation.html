@@ -104,6 +104,56 @@
         <ul>
           <li>Starting off from work done on Flood <a href="/projects/flood">flood-optimization</a>, got inspired to do more work on the GPU</li>
         </ul>
+        <h2 id="generate-hex-column-meshes">Generate hex column meshes</h2>
+        <ul>
+          <li>Bundle many columns into one mesh.</li>
+          <li>6 sides, a cap on top.</li>
+          <li>LOD0: Beveled edges on all sides. Added center vertex with triangles out from that as a cap.</li>
+          <li>LOD1: No bevels, triangle fan as cap.</li>
+          <li>All vertices except the bottom loop weight painted as 1.</li>
+          <li>Unity’s Meshes have a limit of 65535 vertices.</li>
+          <li>To work with Unity’s LOD system, both LODs contained the same number of columns. Even though the vertex limit would have allowed LOD1 to contain many more columns.</li>
+          <li>Maximum size of a ‘chunk’ was 31x31 using LOD0 meshes.</li>
+          <li>
+            <p>Prefer to stick to power of 2 numbers for things like this. Decided on 16x16 instead.</p>
+          </li>
+          <li>I could have absolutely created these meshes in something like Blender. I didn’t. Mesh generation is fun.</li>
+        </ul>
+        <h2 id="vertex-displacement-in-surface-shaders">Vertex displacement in Surface shaders</h2>
+        <ul>
+          <li>Painful documentation.</li>
+          <li>Lack of flexibility in input structs.</li>
+          <li>Adding mysterious and poorly documented #pragma statements to fix shadow errors.</li>
+        </ul>
+        <h2 id="passing-data-from-compute-shaders">Passing data from Compute Shaders</h2>
+        <ul>
+          <li>Can easily share texture data between surface shader and compute shader.</li>
+        </ul>
+        <figure class="highlight">
+          <pre><code class="language-c#" data-lang="c#"><span></span><span class="n">ComputeShader</span> <span class="n">compute</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">computeKernelHandle</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span>
+
+<span class="n">RenderTexture</span> <span class="n">renderTexture</span><span class="p">;</span>
+<span class="n">ComputeBuffer</span> <span class="n">renderTextureBuffer</span><span class="p">;</span>
+
+<span class="k">void</span> <span class="nf">Awake</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">renderTexture</span> <span class="p">=</span> <span class="k">new</span> <span class="n">RenderTexture</span><span class="p">(</span><span class="m">16</span><span class="p">,</span> <span class="m">16</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="n">RenderTextureFormat</span><span class="p">.</span><span class="n">ARGB32</span><span class="p">);</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">useMipMap</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">filterMode</span> <span class="p">=</span> <span class="n">FilterMode</span><span class="p">.</span><span class="n">Point</span><span class="p">;</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">enableRandomWrite</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">Create</span><span class="p">();</span>
+
+    <span class="n">compute</span> <span class="p">=</span> <span class="n">Resources</span><span class="p">.</span><span class="n">Load</span><span class="p">&lt;</span><span class="n">ComputeShader</span><span class="p">&gt;(</span><span class="s">&quot;ComputeShader&quot;</span><span class="p">);</span>
+    <span class="n">computeKernelHandle</span> <span class="p">=</span> <span class="n">compute</span><span class="p">.</span><span class="n">FindKernel</span><span class="p">(</span><span class="s">&quot;CSMain&quot;</span><span class="p">);</span>
+    <span class="n">compute</span><span class="p">.</span><span class="n">SetTexture</span><span class="p">(</span><span class="n">computeKernelHandle</span><span class="p">,</span> <span class="s">&quot;Result&quot;</span><span class="p">,</span> <span class="n">renderTexture</span><span class="p">);</span>
+
+    <span class="n">Shader</span><span class="p">.</span><span class="n">SetGlobalTexture</span><span class="p">(</span><span class="s">&quot;_renderTexture&quot;</span><span class="p">,</span> <span class="n">renderTexture</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">void</span> <span class="nf">OnDestroy</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">renderTexture</span><span class="p">.</span><span class="n">Release</span><span class="p">();</span>
+<span class="p">}</span></code></pre>
+        </figure>
       </div>
       <div class="related">
         <h2>Related Posts</h2>
