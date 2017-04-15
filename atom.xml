@@ -3,7 +3,7 @@
     <title>Mick Derks</title>
     <link href="/atom.xml" rel="self"/>
     <link href="/"/>
-    <updated>2017-04-11T15:01:29+02:00</updated>
+    <updated>2017-04-15T23:12:46+02:00</updated>
     <id></id>
     <author>
       <name>Mick Derks</name>
@@ -72,7 +72,7 @@
       <content type="html">&lt;p&gt;I’ve been working on &lt;a href=&quot;/projects/flood&quot;&gt;Flood&lt;/a&gt; for a few weeks now. It’s been fun to finally call something complete and actually be proud of it. 
         The project started as something simple that I could polish like crazy and use as a portfolio piece.
         Because of this I consider the game’s performance to be incredibly important. As a result I’ve made several performance passes on the game after the initial prototype.&lt;/p&gt;
-        &lt;p&gt;I’m going to describe the iterations I’ve gone through, and what went right and wrong with each one.&lt;/p&gt;
+        &lt;p&gt;This post is mostly going to be a post mortem. I’m going to describe the iterations I’ve gone through, and outline what I think went right and wrong with each one.&lt;/p&gt;
         &lt;table class=&quot;right-extending&quot;&gt;
         &lt;thead&gt;
         &lt;tr&gt;
@@ -157,7 +157,7 @@
         &lt;h4 id=&quot;render-order-problems-were-handled-by-setting-sibling-index-to-last&quot;&gt;Render order problems were ‘handled’ by setting sibling index to last.&lt;/h4&gt;
         &lt;/li&gt;
         &lt;/ul&gt;
-        &lt;p&gt;UGUI renders transform in the order they are arranged in the hierarchy. Because of this, every scaling tile would be drawn over by any tile after it. To fix this, instead of messing with the render order for each &lt;code&gt;CanvasRenderer&lt;/code&gt; component, I hacked it together by reordering all animating tiles to be the last children of their parent. Unfortunately this caused a lot of memory being shuffled around every time I did this. I didn’t do this every frame, only when you pressed a new color, but it still had some serious frametime spikes.&lt;/p&gt;
+        &lt;p&gt;UGUI renders transform in the order they are arranged in the hierarchy. Because of this, every scaling tile would be drawn over by any tile after it. To fix this, instead of messing with the render order for each &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/CanvasRenderer.html&quot;&gt;&lt;code&gt;CanvasRenderer&lt;/code&gt;&lt;/a&gt; component, I hacked it together by reordering all animating tiles to be the last children of their parent. Unfortunately this caused a lot of memory being shuffled around every time I did this. I didn’t do this every frame, only when you pressed a new color, but it still had some serious frametime spikes.&lt;/p&gt;
         &lt;ul&gt;
         &lt;li&gt;
         &lt;h4 id=&quot;ugui-is-rendered-completely-as-transparent-geometry&quot;&gt;UGUI is rendered completely as transparent geometry.&lt;/h4&gt;
@@ -166,42 +166,46 @@
         &lt;p&gt;This meant overdraw. Lots of it. Everything is rendered and nothing is culled. Your desktop GPU can handle a good amount of transparent rendering. Unfortunately, mobile GPUs are not quite as powerful when it comes to fill rates. My approach of having a separate sprite for the color+texture and a separate sprite for the icon meant every pixel was rendered to with transparency at least 3 times (including the game’s background). On your average phone this is pretty taxing.&lt;/p&gt;
         &lt;p&gt;Now, the draw call count for the entire game was hovering between 10-20 most of the time. It’s a good thing Unity is pretty good at batching UGUI elements so I don’t have to deal with a draw call for each sprite in the grid…&lt;/p&gt;
         &lt;h2 id=&quot;individual-quads-the-batching-nightmare&quot;&gt;Individual Quads; the batching nightmare.&lt;/h2&gt;
-        &lt;p&gt;My first &lt;em&gt;real&lt;/em&gt; implementation of the grid used a single quad for each tile, blending in the icon inside of the shader. The changes to a tile’s material were handled by assigning &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html&quot;&gt;&lt;code&gt;MaterialPropertyBlock&lt;/code&gt;&lt;/a&gt; objects to each quad’s renderer every frame they were changed.
-        All animations were done using &lt;a href=&quot;http://dotween.demigiant.com/&quot;&gt;DOTween&lt;/a&gt;. The transforms were scaled using their &lt;code&gt;localScale&lt;/code&gt;. Their colors and icons were assigned to the &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html&quot;&gt;&lt;code&gt;MaterialPropertyBlock&lt;/code&gt;&lt;/a&gt; and applied every frame they had changed.&lt;/p&gt;
-        &lt;blockquote class=&quot;right-extending-inline&quot;&gt;
-        &lt;p&gt;One thing I realised as I was writing this post is that I should have changed the icon opacity to a uniform. Its value is the same for every object using this shader. That’s pretty much what uniforms are for.&lt;/p&gt;
-        &lt;/blockquote&gt;
-        &lt;figure class=&quot;highlight&quot;&gt;
-        &lt;pre&gt;&lt;code class=&quot;language-c#&quot; data-lang=&quot;c#&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Properties&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;_Color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Color&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;_MainTex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Icon Sheet&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2D&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;white&amp;quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;_IconIndex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Icon Index&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;_IconOpacity&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Icon Opacity&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;25&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-        &lt;/figure&gt;
-        &lt;p&gt;Now, most experienced Unity developers will probably be aware of the difference between a renderer’s &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-material.html&quot;&gt;&lt;code&gt;material&lt;/code&gt;&lt;/a&gt; and &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-sharedMaterial.html&quot;&gt;&lt;code&gt;sharedMaterial&lt;/code&gt;&lt;/a&gt; properties. As it says in their documentation. When changing a renderer’s &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-material.html&quot;&gt;&lt;code&gt;material&lt;/code&gt;&lt;/a&gt; property, if it is used anywhere else it will clone the material and give that renderer a unique copy. When changing something on a renderer’s &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-sharedMaterial.html&quot;&gt;&lt;code&gt;sharedMaterial&lt;/code&gt;&lt;/a&gt; property it will apply to every instance of that material.&lt;/p&gt;
-        &lt;p&gt;&lt;a href=&quot;https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html&quot;&gt;&lt;code&gt;MaterialPropertyBlock&lt;/code&gt;&lt;/a&gt; acts like changing the &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-material.html&quot;&gt;&lt;code&gt;material&lt;/code&gt;&lt;/a&gt; property, only without creating a new material instance. It makes it easy to use because you’re not dealing with all these material instances. Unfortunately, as you can read in a &lt;a href=&quot;https://blogs.unity3d.com/2017/04/03/how-to-see-why-your-draw-calls-are-not-batched-in-5-6/&quot;&gt;recent Unity blog&lt;/a&gt;, it still breaks batching.&lt;/p&gt;
-        &lt;blockquote&gt;
-        &lt;p&gt;Different Custom Properties — the object has a different MaterialProperyBlock set.&lt;/p&gt;
-        &lt;/blockquote&gt;
-        &lt;p&gt;When I wrote this approach I did not have a lot of experience with the performance impact of batching. On a desktop GPU you can easily get away with a few thousand draw calls without too many issues, and I’d never really ran into this limitation. The initial 24x24 grid ran poorly with 576 draw calls, but it was still playable. When I turned it up to 36x36 it idled at 10fps or below. The increase from 576 to 1296 draw calls crippled performance.&lt;/p&gt;
-        &lt;blockquote class=&quot;right-extending-inline&quot;&gt;
-        &lt;p&gt;The ‘magic’ .125 value is used as an offset into the icon spritesheet. This sheet has 8 entries with the first one being empty, hence .125 or 1/8th.&lt;/p&gt;
-        &lt;/blockquote&gt;
-        &lt;figure class=&quot;highlight&quot;&gt;
-        &lt;pre&gt;&lt;code class=&quot;language-glsl&quot; data-lang=&quot;glsl&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v2f&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;vert&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;appdata&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v2f&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vertex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;UnityObjectToClipPos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vertex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;float2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;.125&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;.125&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_IconIndex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;fixed4&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;frag&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v2f&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SV_Target&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_Color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tex2D&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_MainTex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_IconOpacity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
-        &lt;/figure&gt;
+        &lt;p&gt;My first &lt;em&gt;real&lt;/em&gt; implementation of the grid used a single quad for each tile, blending in the icon inside of the shader. 
+        Their colors and icons were assigned to a &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html&quot;&gt;&lt;code&gt;MaterialPropertyBlock&lt;/code&gt;&lt;/a&gt;, which was applied every frame something changed.
+        All animations were done using &lt;a href=&quot;http://dotween.demigiant.com/&quot;&gt;DOTween&lt;/a&gt;. The transforms were scaled using their &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Transform-localScale.html&quot;&gt;&lt;code&gt;localScale&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+        &lt;p&gt;This approach was very easy to work with. 
+        It allowed me a great deal of flexibility in experimenting and deciding on a final look for the grid’s animation. 
+        I could easily change a few lines of code to completely change which tiles animated in what way.&lt;/p&gt;
+        &lt;ul&gt;
+        &lt;li&gt;
+        &lt;h4 id=&quot;impact-of-batching&quot;&gt;Impact of batching&lt;/h4&gt;
+        &lt;/li&gt;
+        &lt;/ul&gt;
+        &lt;p&gt;I would wager that most experienced Unity developers will probably be aware of the difference between a renderer’s &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-material.html&quot;&gt;&lt;code&gt;material&lt;/code&gt;&lt;/a&gt; and &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-sharedMaterial.html&quot;&gt;&lt;code&gt;sharedMaterial&lt;/code&gt;&lt;/a&gt; properties. 
+        As it says in their documentation; When changing a renderer’s &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-material.html&quot;&gt;&lt;code&gt;material&lt;/code&gt;&lt;/a&gt; property, if it is used anywhere else it will clone the material and give that renderer a unique copy. 
+        When changing something on a renderer’s &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-sharedMaterial.html&quot;&gt;&lt;code&gt;sharedMaterial&lt;/code&gt;&lt;/a&gt; property it will apply to the one instance of that material, meaning it’s visible on every object using that material.&lt;/p&gt;
+        &lt;p&gt;Assigning a &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html&quot;&gt;&lt;code&gt;MaterialPropertyBlock&lt;/code&gt;&lt;/a&gt; acts like changing the &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Renderer-material.html&quot;&gt;&lt;code&gt;material&lt;/code&gt;&lt;/a&gt; property, only without creating a new material instance. 
+        It makes it easy to use because you’re not dealing with all these material instances. Unfortunately, as you can read in a &lt;a href=&quot;https://blogs.unity3d.com/2017/04/03/how-to-see-why-your-draw-calls-are-not-batched-in-5-6/&quot;&gt;recent Unity blog&lt;/a&gt;, materials with a different &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/MaterialPropertyBlock.html&quot;&gt;&lt;code&gt;MaterialPropertyBlock&lt;/code&gt;&lt;/a&gt; do not get batched together.&lt;/p&gt;
+        &lt;p&gt;When I wrote this approach I did not have a lot of experience with the performance impact of batching. 
+        On a desktop GPU you can easily get away with a few thousand draw calls without too many issues, and I’d never really ran into this limitation. 
+        The initial 24x24 grid ran poorly with 576 draw calls, but it was still playable. When I turned it up to 36x36 it idled at or below 10fps. The increase from 576 to 1296 draw calls crippled performance.
+        &lt;strong&gt;For mobile I would recommend double digit, or at maximum, low triple digit draw call counts.&lt;/strong&gt; While talking about mobile optimization, a colleague brought up how they had a strict draw call limit of 100 while working on their mobile VR game. This seems like a good limit for the vast majority of mobile games.&lt;/p&gt;
+        &lt;ul&gt;
+        &lt;li&gt;
+        &lt;h4 id=&quot;tweening-all-those-quads&quot;&gt;Tweening all those quads&lt;/h4&gt;
+        &lt;/li&gt;
+        &lt;/ul&gt;
+        &lt;p&gt;The main cause of the game feeling sluggish was not a low framerate. 
+        There was not a whole lot of movement on screen most of the time, so in general it was not terribly obvious. 
+        Unfortunately the very noticeable delay when pressing a color before anything would start changing was &lt;em&gt;very&lt;/em&gt; obvious.&lt;/p&gt;
+        &lt;p&gt;I’m going to gloss over my terrible flood fill implementation that took several milliseconds to execute. Mostly out of embarassment. Seriously though, pick the right collection type…&lt;/p&gt;
+        &lt;p&gt;&lt;a href=&quot;http://dotween.demigiant.com/&quot;&gt;DOTween&lt;/a&gt; is great. It’s just not that great at pooling tweens that have to keep changing. 
+        My tweens were constantly offset by a few milliseconds in order to create the wave effect. 
+        The offsets combined with the changing target colors made it impossible to pool these tweens. At least, I never got it working properly. 
+        This resulted in every flood fill generating a ton of new tweening instances. That’s 2-3 megs of garbage every button press on a larger board. 
+        The garbage collector ends up having a field day and eating up 20-40ms or more of your frametime on desktop, depending on grid size, and significantly more on mobile.&lt;/p&gt;
+        &lt;p&gt;&lt;img src=&quot;/assets/img/blogposts/unity-android-optimization-retrospective/profiler_flood_dotween_gc.png&quot; alt=&quot;alt text&quot; title=&quot;DOTween GC spikes.&quot; /&gt;&lt;/p&gt;
+        &lt;p&gt;Animations run smoothly at the start of a game, as I only animate the tiles that are changing. 
+        Towards the end of a game most tiles are changing and performance becomes quite dreadful. 
+        The screenshot above is of a 36x36 grid with around 90% of the board being filled and animated.&lt;/p&gt;
+        &lt;p&gt;On desktop, creating the tweens takes up to like 10ms. Running them afterwards can go even higher than that at times.
+        Again, however, this is significantly more on mobile. Especially lower end devices.&lt;/p&gt;
         &lt;h2 id=&quot;garbage-collection&quot;&gt;Garbage Collection!&lt;/h2&gt;
         &lt;p&gt;&lt;em&gt;Talk about profiling differences in editor and standalone.&lt;/em&gt;&lt;/p&gt;
         &lt;h2 id=&quot;single-mesh-the-solution&quot;&gt;Single mesh; the solution.&lt;/h2&gt;
@@ -228,7 +232,9 @@
         &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
         &lt;/figure&gt;
         &lt;h2 id=&quot;dont-stop-there&quot;&gt;Don’t stop there!&lt;/h2&gt;
-        &lt;p&gt;&lt;em&gt;60fps on mobile may still mean barely 60fps. Battery usage may suffer if it’s still struggling so much.&lt;/em&gt;&lt;/p&gt;
+        &lt;p&gt;Mobile devices are almost always capped at 60fps, even if you tell Unity or whatever you use to not use vsync. Instead of continuously rendering new frames your phone just waits until it’s time to get back to work. 
+        During this time your phone uses significantly less power than while it’s actually working on a new frame.&lt;/p&gt;
+        &lt;p&gt;If your game runs at 60fps you are still not done. There is a big difference between your game running at 70 versus 1000fps. Both will only run at and display 60fps, but will be spending either the vast majority of the time working, or barely any time at all. Consider the impact your game has on your users’ battery levels when deciding if you’re done optimizing!&lt;/p&gt;
       </content>
     </entry>
   </feed>
