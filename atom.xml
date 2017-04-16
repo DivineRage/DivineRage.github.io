@@ -3,7 +3,7 @@
     <title>Mick Derks</title>
     <link href="/atom.xml" rel="self"/>
     <link href="/"/>
-    <updated>2017-04-16T04:40:51+02:00</updated>
+    <updated>2017-04-16T13:03:50+02:00</updated>
     <id></id>
     <author>
       <name>Mick Derks</name>
@@ -288,10 +288,21 @@
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fixed4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fragData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rgb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tex2D&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_IconSheet&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fragData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
         &lt;/figure&gt;
-        &lt;p&gt;As you can see the shaders don’t actually do any of the animations. That is done on the CPU side after every frame, before updating the textures. I keep three copies of the texture data around on the CPU side. One for the final data that is committed to the GPU every frame, one for start and one for target values. This allowed me to iterate over flat arrays, something that’s super quick to do. The code simply decrements the interpolation delay and value appropriately, and then interpolates between the start and target array values based on the interpolation value. I only iterate over the area of the texture that is currently in use by the chosen grid size, and after these values are all updated the final data is committed to the vertex and fragment data textures.&lt;/p&gt;
-        &lt;p&gt;These data textures and the backing data arrays that I keep around are both completely static. They never get discarded, resized, or created anew after the game starts. Furthermore the iteration code is basically free of any allocations. This results in pretty much zero allocations every frame. As you have seen earlier that means we don’t encounter any massive garbage collections that take forever.&lt;/p&gt;
-        &lt;p&gt;Now, the current implementation still has a couple of things that I want to change.&lt;/p&gt;
-        &lt;p&gt;https://docs.unity3d.com/Manual/SL-DataTypesAndPrecision.html&lt;/p&gt;
+        &lt;p&gt;As you can see the shaders don’t actually do any of the animation work. That is done on the CPU side at the end of every frame.
+        I keep three copies of the texture data around on the CPU side. One for the final data that is committed to the GPU every frame, one for the interpolation start and one for the interpolation target values. 
+        This allowed me to iterate over flat arrays, something that’s super quick to do. 
+        The code simply decrements the interpolation delay and value appropriately using &lt;a href=&quot;https://docs.unity3d.com/ScriptReference/Time-deltaTime.html&quot;&gt;&lt;code&gt;Time.deltaTime&lt;/code&gt;&lt;/a&gt;, and then interpolates between the start and target values from their respective arrays based on the interpolation value. 
+        I iterate over the entire array, and after these values are all updated the final data is applied to the vertex and fragment data textures.&lt;/p&gt;
+        &lt;p&gt;These data textures and the backing data arrays that I keep around are both completely static. They never get discarded, resized, or created anew after the game starts. 
+        Furthermore the iteration code is basically free of any allocations. This results in pretty much zero allocations every frame. 
+        As you have seen earlier that means we don’t encounter any massive garbage collections that take forever.&lt;/p&gt;
+        &lt;p&gt;Now, the current implementation still has a couple of things that I would like to change.&lt;/p&gt;
+        &lt;ol&gt;
+        &lt;li&gt;Only iterate over the area used by the currently selected grid size. Should be an easy change to the update loop. It’s just been so quick I haven’t felt the need to just yet.&lt;/li&gt;
+        &lt;li&gt;I don’t use the blue and alpha channels in the vertex shader, so I could cut down memory usage a bit if I switched to two channel textures instead for the vertex data.&lt;/li&gt;
+        &lt;li&gt;Pull the constants defined in my shader code into uniforms. This would allow me to change them without having to dive into the shader code again. It wouldn’t really change anything, I just don’t like keeping magic numbers around.&lt;/li&gt;
+        &lt;li&gt;Use &lt;a href=&quot;https://docs.unity3d.com/Manual/SL-DataTypesAndPrecision.html&quot;&gt;this information&lt;/a&gt; to cut down the memory usage some more. Again, it wouldn’t really change all that much. It’s just cleaner to use the right values for this. It’s not like I need 64 bits of memory in my &lt;code&gt;float2&lt;/code&gt; uv channels to define a 0 and 1 for one of the uv channels.&lt;/li&gt;
+        &lt;/ol&gt;
         &lt;h2 id=&quot;dont-stop-there&quot;&gt;Don’t stop there!&lt;/h2&gt;
         &lt;p&gt;Mobile devices are almost always capped at 60fps, even if you tell Unity or whatever you use to not use vsync. Instead of continuously rendering new frames your phone just waits until it’s time to get back to work. 
         During this time your phone uses significantly less power than while it’s actually working on a new frame.&lt;/p&gt;
