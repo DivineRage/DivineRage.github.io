@@ -178,7 +178,7 @@
             <thead>
               <tr>
                 <th>Grid Size</th>
-                <th>UGUI</th>
+                <th>Unity UI</th>
                 <th>Individual Quads</th>
                 <th>Single Static Mesh</th>
               </tr>
@@ -203,9 +203,9 @@
             Unfortunately, when I first tried to bump it up to 36x36 the game just ground to a halt. 
             This was my cue to invest some serious time and effort into getting used to Unity’s profiling tools.</p>
           <h2 id="unity-ui-grid-the-naive-approach">Unity UI Grid; the naive approach.</h2>
-          <p>My initial prototype was entire done with UGUI.</p>
+          <p>My initial prototype was entire done with Unity’s UI system.</p>
           <p>Yeah…</p>
-          <p>I knew from the start that I would most likely end up redoing most of my initial prototype. And don’t get me wrong. UGUI is awesome. It’s just in no way intended to deal with the things I asked of it. Of course it’s perfect for the game’s UI, but implementing the grid in UGUI is a terrible idea. Let me explain why.</p>
+          <p>I knew from the start that I would most likely end up redoing most of my initial prototype. And don’t get me wrong. Unity’s UI system is awesome. It’s just in no way intended to deal with the things I asked of it. Of course it’s perfect for the game’s actual UI, but implementing the grid in the UI system is a terrible idea. Let me explain why.</p>
           <p>Consider the following situation;</p>
           <ul>
             <li>We’re using a 24x24 grid of tiles. That’s 576 transforms.</li>

@@ -60,6 +60,9 @@
   }
 }
 
+/****************/
+/* Inline video */
+/****************/
 .videoWrapper {
   position: relative;
   padding-bottom: 56.25%;
@@ -76,6 +79,9 @@
 }
 
 
+/****************/
+/*    Sidebar   */
+/****************/
 .sidebar-site-title {
   width:auto;
 }
@@ -104,6 +110,9 @@
 }
 
 
+/****************/
+/*   Frontpage  */
+/****************/
 .frontpage-container {
   display: flex;
   flex-direction: row;
@@ -169,3 +178,56 @@
   font-size: 18px;
   line-height: 18px;
 }
+
+
+/****************/
+/*   Slideshow  */
+/****************/
+.slide-container {
+  max-height:100%;
+  position:absolute;
+  right:0px;
+  top:0px;
+}
+
+.slide {
+  max-height:100vh;
+}
+
+.slide-nav {
+  
+}
+.slide-nav-left {
+  
+}
+.slide-nav-right {
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
