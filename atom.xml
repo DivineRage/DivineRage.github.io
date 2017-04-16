@@ -3,7 +3,7 @@
     <title>Mick Derks</title>
     <link href="/atom.xml" rel="self"/>
     <link href="/"/>
-    <updated>2017-04-15T23:12:46+02:00</updated>
+    <updated>2017-04-16T04:40:51+02:00</updated>
     <id></id>
     <author>
       <name>Mick Derks</name>
@@ -206,19 +206,73 @@
         The screenshot above is of a 36x36 grid with around 90% of the board being filled and animated.&lt;/p&gt;
         &lt;p&gt;On desktop, creating the tweens takes up to like 10ms. Running them afterwards can go even higher than that at times.
         Again, however, this is significantly more on mobile. Especially lower end devices.&lt;/p&gt;
-        &lt;h2 id=&quot;garbage-collection&quot;&gt;Garbage Collection!&lt;/h2&gt;
-        &lt;p&gt;&lt;em&gt;Talk about profiling differences in editor and standalone.&lt;/em&gt;&lt;/p&gt;
         &lt;h2 id=&quot;single-mesh-the-solution&quot;&gt;Single mesh; the solution.&lt;/h2&gt;
-        &lt;p&gt;&lt;em&gt;TODO: Actually get rid of properties! Uniforms all the way!&lt;/em&gt;&lt;/p&gt;
-        &lt;p&gt;&lt;em&gt;Talk about parts of this at a time? First vert then frag probably?&lt;/em&gt;&lt;/p&gt;
+        &lt;p&gt;The perfect solution to the draw call problem would be to only draw one object total. 
+        Luckily, the things I do with the grid are very simple. 
+        Tiles are a solid color, with an icon blended over top. 
+        Animations are colors interpolating and simple scaling of the quad.
+        I found a way to combine all of this into a vertex and fragment shader, rendered using a single static mesh.&lt;/p&gt;
+        &lt;p&gt;When selecting a new grid size for the first time that session the game creates a static mesh. 
+        This mesh is pooled, so you only have to generate it once.
+        The mesh is just a grid of individual quads, with every quad having two UV channels. 
+        One channel. where the quad covers the entire 0-1 uv range, and one where all four vertices are a single point. 
+        That point is the tile’s grid position divided by 64.&lt;/p&gt;
+        &lt;blockquote class=&quot;right-extending-upwards&quot;&gt;
+        &lt;p&gt;64 is the maximum grid size. I chose this value because I did not want to limit the size of my tiles while writing this implementation. It wouldn’t be very hard to change this later on, but I knew I would likely want grids bigger than 32x32, and that 64x64 would likely be too tiny to enjoy on phone screens. Power-of-two texture sizes tend to be more efficient to work with, so I just used 64x64 textures here.&lt;/p&gt;
+        &lt;/blockquote&gt;
+        &lt;p&gt;The shader does everything it needs to using two textures (and an icon spritesheet). 
+        These textures serve as a lookup table for all the required data. 
+        They are standard RGBA textures that use point sampling, since they are sampled using the grid position saved in one of the uv channels. 
+        It is important that these textures are using point sampling to prevent any interpolated values from messing up everything.&lt;/p&gt;
+        &lt;p&gt;The first texture contains information relevant to the vertex shader;&lt;/p&gt;
+        &lt;table&gt;
+        &lt;tbody&gt;
+        &lt;tr&gt;
+        &lt;td&gt;Red&lt;/td&gt;
+        &lt;td&gt;Tile scale bonus. With 0 being regular size, and 1 being maximum bonus size defined in the shader.&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+        &lt;td&gt;Green&lt;/td&gt;
+        &lt;td&gt;Icon index. This simply acts as a UV offset for sampling the correct icon to blend on top.&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+        &lt;td&gt;Blue&lt;/td&gt;
+        &lt;td&gt;Interpolation value. This is used to calculate interpolation.&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+        &lt;td&gt;Alpha&lt;/td&gt;
+        &lt;td&gt;Interpolation delay. This is used to delay the interpolation done on this tile.&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;/tbody&gt;
+        &lt;/table&gt;
+        &lt;p&gt;The second texture contains information relevant to the fragment shader;&lt;/p&gt;
+        &lt;table&gt;
+        &lt;tbody&gt;
+        &lt;tr&gt;
+        &lt;td&gt;RGB&lt;/td&gt;
+        &lt;td&gt;Tile color. Simply the solid color applied to the tile.&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+        &lt;td&gt;Alpha&lt;/td&gt;
+        &lt;td&gt;Icon opacity. This let me interpolate the icon opacity on a per-tile basis.&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;/tbody&gt;
+        &lt;/table&gt;
+        &lt;p&gt;It was very useful that the data I needed for each shader stage fit inside of a single texture. This let me get away with a single texture lookup for this data. I will let the shader code explain how the data is used.&lt;/p&gt;
         &lt;figure class=&quot;highlight&quot;&gt;
         &lt;pre&gt;&lt;code class=&quot;language-glsl&quot; data-lang=&quot;glsl&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v2f&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;vert&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;appdata&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;v2f&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Get the information from the data texture.&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;float4&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;vertData&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tex2Dlod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_DataVert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;float4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Tile size bonus. This should probably be turned into a shader uniform.&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;float&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vertData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;.2&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Use the 0-1 UV space in the uv0 channel to push the quads vertices outwards.&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Displacement based on size value from above.&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vertex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vertex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;float4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;float2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mo&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vertex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;UnityObjectToClipPos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vertex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Shift the 0-1 range over to cover the correct tile icon. &lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// The icon sheet is 8x1, so we just multiply the regular 0-1 uvs .125 to fit properly.&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;float2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;.125&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;vertData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
@@ -227,10 +281,17 @@
         &lt;figure class=&quot;highlight&quot;&gt;
         &lt;pre&gt;&lt;code class=&quot;language-glsl&quot; data-lang=&quot;glsl&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fixed4&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;frag&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v2f&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SV_Target&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Do our texture lookup once. &lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// To figure out what color the tile should be, as well as the icon&amp;#39;s opacity.&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;float4&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fragData&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tex2D&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_DataFrag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Properly blend the color and icon.&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fixed4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fragData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rgb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tex2D&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_IconSheet&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uv0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fragData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
         &lt;/figure&gt;
+        &lt;p&gt;As you can see the shaders don’t actually do any of the animations. That is done on the CPU side after every frame, before updating the textures. I keep three copies of the texture data around on the CPU side. One for the final data that is committed to the GPU every frame, one for start and one for target values. This allowed me to iterate over flat arrays, something that’s super quick to do. The code simply decrements the interpolation delay and value appropriately, and then interpolates between the start and target array values based on the interpolation value. I only iterate over the area of the texture that is currently in use by the chosen grid size, and after these values are all updated the final data is committed to the vertex and fragment data textures.&lt;/p&gt;
+        &lt;p&gt;These data textures and the backing data arrays that I keep around are both completely static. They never get discarded, resized, or created anew after the game starts. Furthermore the iteration code is basically free of any allocations. This results in pretty much zero allocations every frame. As you have seen earlier that means we don’t encounter any massive garbage collections that take forever.&lt;/p&gt;
+        &lt;p&gt;Now, the current implementation still has a couple of things that I want to change.&lt;/p&gt;
+        &lt;p&gt;https://docs.unity3d.com/Manual/SL-DataTypesAndPrecision.html&lt;/p&gt;
         &lt;h2 id=&quot;dont-stop-there&quot;&gt;Don’t stop there!&lt;/h2&gt;
         &lt;p&gt;Mobile devices are almost always capped at 60fps, even if you tell Unity or whatever you use to not use vsync. Instead of continuously rendering new frames your phone just waits until it’s time to get back to work. 
         During this time your phone uses significantly less power than while it’s actually working on a new frame.&lt;/p&gt;

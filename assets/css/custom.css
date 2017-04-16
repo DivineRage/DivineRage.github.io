@@ -20,6 +20,20 @@
     width:auto;
   }
 }
+/* Small screens, float right */
+.right-extending-upwards {
+  float: right;
+  margin-left: 1em;
+}
+/* Big screens, excessive space on the right */
+@media(min-width: 92em) {
+  .right-extending-upwards {
+    float:right;
+    position:absolute;
+    margin-left:42em;
+    width:auto;
+  }
+}
 
 /* Small screens, inline */
 .right-extending-inline {

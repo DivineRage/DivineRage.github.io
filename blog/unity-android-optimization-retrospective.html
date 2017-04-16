@@ -214,19 +214,73 @@
           The screenshot above is of a 36x36 grid with around 90% of the board being filled and animated.</p>
         <p>On desktop, creating the tweens takes up to like 10ms. Running them afterwards can go even higher than that at times.
           Again, however, this is significantly more on mobile. Especially lower end devices.</p>
-        <h2 id="garbage-collection">Garbage Collection!</h2>
-        <p><em>Talk about profiling differences in editor and standalone.</em></p>
         <h2 id="single-mesh-the-solution">Single mesh; the solution.</h2>
-        <p><em>TODO: Actually get rid of properties! Uniforms all the way!</em></p>
-        <p><em>Talk about parts of this at a time? First vert then frag probably?</em></p>
+        <p>The perfect solution to the draw call problem would be to only draw one object total. 
+          Luckily, the things I do with the grid are very simple. 
+          Tiles are a solid color, with an icon blended over top. 
+          Animations are colors interpolating and simple scaling of the quad.
+          I found a way to combine all of this into a vertex and fragment shader, rendered using a single static mesh.</p>
+        <p>When selecting a new grid size for the first time that session the game creates a static mesh. 
+          This mesh is pooled, so you only have to generate it once.
+          The mesh is just a grid of individual quads, with every quad having two UV channels. 
+          One channel. where the quad covers the entire 0-1 uv range, and one where all four vertices are a single point. 
+          That point is the tile’s grid position divided by 64.</p>
+        <blockquote class="right-extending-upwards">
+          <p>64 is the maximum grid size. I chose this value because I did not want to limit the size of my tiles while writing this implementation. It wouldn’t be very hard to change this later on, but I knew I would likely want grids bigger than 32x32, and that 64x64 would likely be too tiny to enjoy on phone screens. Power-of-two texture sizes tend to be more efficient to work with, so I just used 64x64 textures here.</p>
+        </blockquote>
+        <p>The shader does everything it needs to using two textures (and an icon spritesheet). 
+          These textures serve as a lookup table for all the required data. 
+          They are standard RGBA textures that use point sampling, since they are sampled using the grid position saved in one of the uv channels. 
+          It is important that these textures are using point sampling to prevent any interpolated values from messing up everything.</p>
+        <p>The first texture contains information relevant to the vertex shader;</p>
+        <table>
+          <tbody>
+            <tr>
+              <td>Red</td>
+              <td>Tile scale bonus. With 0 being regular size, and 1 being maximum bonus size defined in the shader.</td>
+            </tr>
+            <tr>
+              <td>Green</td>
+              <td>Icon index. This simply acts as a UV offset for sampling the correct icon to blend on top.</td>
+            </tr>
+            <tr>
+              <td>Blue</td>
+              <td>Interpolation value. This is used to calculate interpolation.</td>
+            </tr>
+            <tr>
+              <td>Alpha</td>
+              <td>Interpolation delay. This is used to delay the interpolation done on this tile.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>The second texture contains information relevant to the fragment shader;</p>
+        <table>
+          <tbody>
+            <tr>
+              <td>RGB</td>
+              <td>Tile color. Simply the solid color applied to the tile.</td>
+            </tr>
+            <tr>
+              <td>Alpha</td>
+              <td>Icon opacity. This let me interpolate the icon opacity on a per-tile basis.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>It was very useful that the data I needed for each shader stage fit inside of a single texture. This let me get away with a single texture lookup for this data. I will let the shader code explain how the data is used.</p>
         <figure class="highlight">
           <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="n">v2f</span> <span class="n">vert</span> <span class="p">(</span><span class="n">appdata</span> <span class="n">v</span><span class="p">)</span>
 <span class="p">{</span>
     <span class="n">v2f</span> <span class="n">o</span><span class="p">;</span>
+    <span class="c1">// Get the information from the data texture.</span>
     <span class="n">float4</span> <span class="n">vertData</span> <span class="o">=</span> <span class="n">tex2Dlod</span><span class="p">(</span><span class="n">_DataVert</span><span class="p">,</span> <span class="n">float4</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">uv1</span><span class="p">.</span><span class="n">xy</span><span class="p">,</span> <span class="mo">0</span><span class="p">,</span> <span class="mo">0</span><span class="p">));</span>
+    <span class="c1">// Tile size bonus. This should probably be turned into a shader uniform.</span>
     <span class="k">float</span> <span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">vertData</span><span class="p">.</span><span class="n">r</span> <span class="o">*</span> <span class="mf">.2</span><span class="n">f</span><span class="p">);</span>
+    <span class="c1">// Use the 0-1 UV space in the uv0 channel to push the quads vertices outwards.</span>
+    <span class="c1">// Displacement based on size value from above.</span>
     <span class="n">v</span><span class="p">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">vertex</span> <span class="o">+</span> <span class="n">float4</span><span class="p">(((</span><span class="n">v</span><span class="p">.</span><span class="n">uv0</span> <span class="o">-</span> <span class="n">float2</span><span class="p">(</span><span class="mf">.5</span><span class="p">,</span> <span class="mf">.5</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">size</span><span class="p">)).</span><span class="n">xy</span><span class="p">,</span> <span class="o">-</span><span class="n">size</span><span class="p">,</span> <span class="mo">0</span><span class="p">);</span>
     <span class="n">o</span><span class="p">.</span><span class="n">vertex</span> <span class="o">=</span> <span class="n">UnityObjectToClipPos</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">vertex</span><span class="p">);</span>
+    <span class="c1">// Shift the 0-1 range over to cover the correct tile icon. </span>
+    <span class="c1">// The icon sheet is 8x1, so we just multiply the regular 0-1 uvs .125 to fit properly.</span>
     <span class="n">o</span><span class="p">.</span><span class="n">uv0</span> <span class="o">=</span> <span class="n">float2</span><span class="p">((</span><span class="n">v</span><span class="p">.</span><span class="n">uv0</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="mf">.125</span><span class="p">)</span> <span class="o">+</span> <span class="n">vertData</span><span class="p">.</span><span class="n">g</span><span class="p">,</span> <span class="n">v</span><span class="p">.</span><span class="n">uv0</span><span class="p">.</span><span class="n">y</span><span class="p">);</span>
     <span class="n">o</span><span class="p">.</span><span class="n">uv1</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">uv1</span><span class="p">;</span>
     <span class="k">return</span> <span class="n">o</span><span class="p">;</span>
@@ -235,10 +289,17 @@
         <figure class="highlight">
           <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="n">fixed4</span> <span class="n">frag</span> <span class="p">(</span><span class="n">v2f</span> <span class="n">i</span><span class="p">)</span> <span class="o">:</span> <span class="n">SV_Target</span>
 <span class="p">{</span>
+    <span class="c1">// Do our texture lookup once. </span>
+    <span class="c1">// To figure out what color the tile should be, as well as the icon&#39;s opacity.</span>
     <span class="n">float4</span> <span class="n">fragData</span> <span class="o">=</span> <span class="n">tex2D</span><span class="p">(</span><span class="n">_DataFrag</span><span class="p">,</span> <span class="n">i</span><span class="p">.</span><span class="n">uv1</span><span class="p">);</span>
+    <span class="c1">// Properly blend the color and icon.</span>
     <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fixed4</span><span class="p">(</span><span class="n">fragData</span><span class="p">.</span><span class="n">rgb</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">tex2D</span><span class="p">(</span><span class="n">_IconSheet</span><span class="p">,</span> <span class="n">i</span><span class="p">.</span><span class="n">uv0</span><span class="p">)</span> <span class="o">*</span> <span class="n">fragData</span><span class="p">.</span><span class="n">a</span><span class="p">));</span>
 <span class="p">}</span></code></pre>
         </figure>
+        <p>As you can see the shaders don’t actually do any of the animations. That is done on the CPU side after every frame, before updating the textures. I keep three copies of the texture data around on the CPU side. One for the final data that is committed to the GPU every frame, one for start and one for target values. This allowed me to iterate over flat arrays, something that’s super quick to do. The code simply decrements the interpolation delay and value appropriately, and then interpolates between the start and target array values based on the interpolation value. I only iterate over the area of the texture that is currently in use by the chosen grid size, and after these values are all updated the final data is committed to the vertex and fragment data textures.</p>
+        <p>These data textures and the backing data arrays that I keep around are both completely static. They never get discarded, resized, or created anew after the game starts. Furthermore the iteration code is basically free of any allocations. This results in pretty much zero allocations every frame. As you have seen earlier that means we don’t encounter any massive garbage collections that take forever.</p>
+        <p>Now, the current implementation still has a couple of things that I want to change.</p>
+        <p>https://docs.unity3d.com/Manual/SL-DataTypesAndPrecision.html</p>
         <h2 id="dont-stop-there">Don’t stop there!</h2>
         <p>Mobile devices are almost always capped at 60fps, even if you tell Unity or whatever you use to not use vsync. Instead of continuously rendering new frames your phone just waits until it’s time to get back to work. 
           During this time your phone uses significantly less power than while it’s actually working on a new frame.</p>
