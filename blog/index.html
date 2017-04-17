@@ -268,7 +268,10 @@
           <p>The main cause of the game feeling sluggish was not a low framerate. 
             There was not a whole lot of movement on screen most of the time, so in general it was not terribly obvious. 
             Unfortunately the very noticeable delay when pressing a color before anything would start changing was <em>very</em> obvious.</p>
-          <p>I’m going to gloss over my terrible flood fill implementation that took several milliseconds to execute. Mostly out of embarassment. Seriously though, pick the right collection type…</p>
+          <p>I’m going to gloss over my terrible flood fill implementation that took several milliseconds to execute. 
+            Mostly out of embarassment, but also because I’d like to keep this post about things I learned that (almost) anyone can learn from and use. 
+            Flood fills are not going to be relevant to the vast majority of readers.
+            Seriously though, pick the right collection type…</p>
           <p><a href="http://dotween.demigiant.com/">DOTween</a> is great. It’s just not that great at pooling tweens that have to keep changing. 
             My tweens were constantly offset by a few milliseconds in order to create the wave effect. 
             The offsets combined with the changing target colors made it impossible to pool these tweens. At least, I never got it working properly. 
@@ -292,7 +295,7 @@
             One channel. where the quad covers the entire 0-1 uv range, and one where all four vertices are a single point. 
             That point is the tile’s grid position divided by 64.</p>
           <blockquote class="right-extending-upwards">
-            <p>64 is the maximum grid size. I chose this value because I did not want to limit the size of my tiles while writing this implementation. It wouldn’t be very hard to change this later on, but I knew I would likely want grids bigger than 32x32, and that 64x64 would likely be too tiny to enjoy on phone screens. Power-of-two texture sizes tend to be more efficient to work with, so I just used 64x64 textures here.</p>
+            <p>64 is the maximum grid size. I chose this value because I did not want to limit the size of my tiles while writing the implementation. It wouldn’t be very hard to change later on, but I knew I would likely want grids bigger than 32x32, and that 64x64 would likely be too tiny to enjoy on phone screens. Power-of-two texture sizes tend to be more efficient to work with, so I just used 64x64 textures here.</p>
           </blockquote>
           <p>The shader does everything it needs to using two textures (and an icon spritesheet). 
             These textures serve as a lookup table for all the required data. 
