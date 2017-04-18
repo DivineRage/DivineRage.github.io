@@ -106,7 +106,7 @@
             <li>Lack of flexibility in input structs.</li>
             <li>Adding mysterious and poorly documented #pragma statements to fix shadow errors.</li>
           </ul>
-          <h2 id="passing-data-from-compute-shaders">Passing data from Compute Shaders</h2>
+          <h2 id="setting-up-compute-shaders">Setting up Compute Shaders</h2>
           <ul>
             <li>Can easily share texture data between surface shader and compute shader.</li>
           </ul>
@@ -134,6 +134,14 @@
 <span class="k">void</span> <span class="nf">OnDestroy</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">renderTexture</span><span class="p">.</span><span class="n">Release</span><span class="p">();</span>
 <span class="p">}</span></code></pre>
+          </figure>
+          <h2 id="passing-data-from-compute-shaders">Passing data from Compute Shaders</h2>
+          <ul>
+            <li>Can easily share texture data between surface shader and compute shader.</li>
+          </ul>
+          <figure class="highlight">
+            <pre><code class="language-glsl" data-lang="glsl"><span></span><span class="o">*</span><span class="n">Insert</span> <span class="n">snippet</span> <span class="n">of</span> <span class="n">shader</span> <span class="n">code</span> <span class="n">from</span> <span class="n">surface</span> <span class="n">shader</span> <span class="n">and</span> <span class="n">compute</span> <span class="n">shader</span><span class="p">,</span> 
+<span class="n">illustrating</span> <span class="n">how</span> <span class="n">to</span> <span class="n">share</span> <span class="n">data</span><span class="o">*</span></code></pre>
           </figure>
         </div>
         <div class="post">

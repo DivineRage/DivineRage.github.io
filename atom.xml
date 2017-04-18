@@ -3,7 +3,7 @@
     <title>Mick Derks</title>
     <link href="/atom.xml" rel="self"/>
     <link href="/"/>
-    <updated>2017-04-17T02:04:15+02:00</updated>
+    <updated>2017-04-18T13:35:35+02:00</updated>
     <id></id>
     <author>
       <name>Mick Derks</name>
@@ -38,7 +38,7 @@
         &lt;li&gt;Lack of flexibility in input structs.&lt;/li&gt;
         &lt;li&gt;Adding mysterious and poorly documented #pragma statements to fix shadow errors.&lt;/li&gt;
         &lt;/ul&gt;
-        &lt;h2 id=&quot;passing-data-from-compute-shaders&quot;&gt;Passing data from Compute Shaders&lt;/h2&gt;
+        &lt;h2 id=&quot;setting-up-compute-shaders&quot;&gt;Setting up Compute Shaders&lt;/h2&gt;
         &lt;ul&gt;
         &lt;li&gt;Can easily share texture data between surface shader and compute shader.&lt;/li&gt;
         &lt;/ul&gt;
@@ -61,6 +61,14 @@
         &lt;span class=&quot;k&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;OnDestroy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;renderTexture&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Release&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+        &lt;/figure&gt;
+        &lt;h2 id=&quot;passing-data-from-compute-shaders&quot;&gt;Passing data from Compute Shaders&lt;/h2&gt;
+        &lt;ul&gt;
+        &lt;li&gt;Can easily share texture data between surface shader and compute shader.&lt;/li&gt;
+        &lt;/ul&gt;
+        &lt;figure class=&quot;highlight&quot;&gt;
+        &lt;pre&gt;&lt;code class=&quot;language-glsl&quot; data-lang=&quot;glsl&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Insert&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;snippet&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shader&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;code&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;surface&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shader&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;compute&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shader&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+        &lt;span class=&quot;n&quot;&gt;illustrating&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;how&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;share&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
         &lt;/figure&gt;
       </content>
     </entry>
