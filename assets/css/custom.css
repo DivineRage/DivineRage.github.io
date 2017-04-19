@@ -180,12 +180,9 @@
 /*   Slideshow  */
 /****************/
 .slide-container {
-  height:90vh;
-  width:calc(0.5625 * 90vh);
-  position:absolute;
-  right:5vh;
-  top:5vh;
-  bottom:5vh;
+  position:relative;
+  height:90vmin;
+  width:calc(0.5625 * 90vmin);
 }
 .slide-container:hover .slide-nav {
   display:block;
@@ -211,20 +208,21 @@
   display:none;
 }
 .slide-nav {
-  height:10vh;
+  height:10%;
   position:absolute;
-  top:40vh;
+  top:45%;
   width:10%;
+  
   background-color:rgba(128,128,128,.5);
   border:none;
   color:white;
   display:none;
 }
 .slide-nav-left {
-  left:0px;
+  left:0;
 }
 .slide-nav-right {
-  right:0px;
+  right:0;
 }
 
 
