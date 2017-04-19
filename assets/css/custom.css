@@ -181,6 +181,7 @@
 /****************/
 .slide-container {
   height:90vh;
+  width:calc(0.5625 * 90vh);
   position:absolute;
   right:5vh;
   top:5vh;
