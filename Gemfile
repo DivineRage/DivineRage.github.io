@@ -30,3 +30,4 @@ gem 'jekyll-watch'
 gem 'jekyll-tidy'
 gem 'github-pages', '72'
 gem "pygments.rb"
+gem "mini_magick"

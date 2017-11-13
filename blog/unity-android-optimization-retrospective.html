@@ -7,7 +7,7 @@
     <!-- Enable responsiveness on mobile devices-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
     <title>
-      Unity Android - An optimization retrospective &middot; Mick Derks
+      Unity Android - An optimization retrospective &middot; Mick Derks 
     </title>
     <!-- CSS -->
     <link rel="stylesheet" href="/assets/css/poole.css">
@@ -25,28 +25,20 @@
     <link rel="apple-touch-icon" sizes="144x144" href="/assets/img/icons/apple-icon-144x144.png">
     <link rel="apple-touch-icon" sizes="152x152" href="/assets/img/icons/apple-icon-152x152.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/icons/apple-icon-180x180.png">
-    <link rel="icon" type="image/assets/img/icons/png" sizes="192x192"  href="/assets/img/icons/android-icon-192x192.png">
-    <link rel="icon" type="image/assets/img/icons/png" sizes="32x32" href="/assets/img/icons/favicon-32x32.png">
-    <link rel="icon" type="image/assets/img/icons/png" sizes="96x96" href="/assets/img/icons/favicon-96x96.png">
-    <link rel="icon" type="image/assets/img/icons/png" sizes="16x16" href="/assets/img/icons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/img/icons/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/assets/img/icons/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/img/icons/favicon-16x16.png">
     <link rel="manifest" href="/assets/img/icons/manifest.json">
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="/assets/img/icons/ms-icon-144x144.png">
     <meta name="theme-color" content="#ffffff">
     <!-- RSS -->
     <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
-    <!-- External links to new tabs -->
-    <script type="text/javascript" defer>
-      document.addEventListener("DOMContentLoaded", function(event) {
-            // Make all external links open in a new tab.
-            var links = document.links;
-            for (var i = 0, linksLength = links.length; i < linksLength; i++) {
-                if (links[i].hostname != window.location.hostname) {
-                    links[i].target = '_blank';
-                }
-            }
-          });
-    </script>
+    <link rel="stylesheet" href="/assets/css/photoswipe.css">
+    <link rel="stylesheet" href="/assets/css/photoswipe_default_skin.css">
+    <script src="/assets/js/photoswipe.js"></script>
+    <script src="/assets/js/photoswipe-ui-default.min.js"></script>
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
         (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -333,8 +325,168 @@
       <div class="related">
         <h2>Related Posts</h2>
         <ul class="related-posts">
+          <li>
+            <h3>
+              <a href="/blog/3d-printed-vase-shroud">
+                3D Printed Vase Shroud
+                <small>13 Nov 2017</small>
+              </a>
+            </h3>
+          </li>
         </ul>
       </div>
     </div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+    <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+      <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+      <div class="pswp__bg"></div>
+      <!-- Slides wrapper with overflow:hidden. -->
+      <div class="pswp__scroll-wrap">
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+          <div class="pswp__item"></div>
+          <div class="pswp__item"></div>
+          <div class="pswp__item"></div>
+        </div>
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+          <div class="pswp__top-bar">
+            <!--  Controls are self-explanatory. Order can be changed. -->
+            <div class="pswp__counter"></div>
+            <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+            <button class="pswp__button pswp__button--share" title="Share"></button>
+            <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+            <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+            <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+            <!-- element will get class pswp__preloader--active when preloader is running -->
+            <div class="pswp__preloader">
+              <div class="pswp__preloader__icn">
+                <div class="pswp__preloader__cut">
+                  <div class="pswp__preloader__donut"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+            <div class="pswp__share-tooltip"></div>
+          </div>
+          <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+          </button>
+          <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+          </button>
+          <div class="pswp__caption">
+            <div class="pswp__caption__center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- External links to new tabs -->
+    <script type="text/javascript" defer>
+      document.addEventListener("DOMContentLoaded", function(event) {
+              // Make all external links open in a new tab.
+              var links = document.links;
+              for (var i = 0, linksLength = links.length; i < linksLength; i++) {
+                  if (links[i].hostname != window.location.hostname) {
+                      links[i].target = '_blank';
+                  }
+              }
+      
+              (function() {
+                  var initPhotoSwipeFromDOM = function(gallerySelector) {
+      
+                      var onThumbnailsClick = function(e) {
+                        e = e || window.event;
+                        e.preventDefault ? e.preventDefault() : e.returnValue = false;
+      
+                        var eTarget = e.target || e.srcElement;
+                        if (!eTarget.hasAttribute("data-gid") || !eTarget.hasAttribute("data-pid"))
+                          return;
+      
+                        var targetGID = eTarget.getAttribute("data-gid");
+                        var targetPID = eTarget.getAttribute("data-pid");
+      
+                        openPhotoswipe(targetGID, targetPID, false);
+      
+                        return false;
+                      };
+      
+                      var openPhotoswipe = function(galleryIndex, photoIndex, fromUrl) {
+                        var images = Array.prototype.slice.call(document.getElementsByTagName("img")).filter(function(image) {
+                          return image.hasAttribute("data-gid") && image.getAttribute("data-gid") == galleryIndex;
+                        });
+      
+                        var items = [];
+                        for (var i = 0; i < images.length; i++) {
+                          var img = images[i];
+                          var a = img.parentNode;
+                          var item = {};
+                          item.src = a.href;
+                          item.w = a.getAttribute("defaultwidth");
+                          item.h = a.getAttribute("defaultheight");
+                          items.push(item);
+                        }
+      
+                        var options = { index: parseInt(photoIndex, 10) };
+                        var pswpElement = document.querySelectorAll('.pswp')[0];
+                        var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, options);
+                        gallery.init();
+                      };
+      
+                      // Hook up click events to all images on the page.
+                      var all = document.querySelectorAll(".post, .page");
+                      for (var iGallery = 0; iGallery < all.length; iGallery++) {
+                        var post = all[iGallery];
+                        var images = post.getElementsByTagName("img");
+      
+                        for (var iImg = 0; iImg < images.length; iImg++) {
+                            var img = images[iImg];
+                            img.setAttribute('data-gid', iGallery);
+                            img.setAttribute('data-pid', iImg);
+                            img.onclick = onThumbnailsClick;
+                        }
+                      }
+      
+                      var photoswipeParseHash = function() {
+                        var hash = window.location.hash.substring(1),
+                            params = {};
+      
+                        if(hash.length < 5) { // pid=1
+                            return params;
+                        }
+      
+                        var vars = hash.split('&');
+                        for (var i = 0; i < vars.length; i++) {
+                          if(!vars[i]) {
+                            continue;
+                          }
+                          var pair = vars[i].split('=');
+                          if(pair.length < 2) {
+                            continue;
+                          }
+                          params[pair[0]] = pair[1];
+                        }
+      
+                        if(params.gid) {
+                          params.gid = parseInt(params.gid, 10);
+                        }
+      
+                        return params;
+                      };
+      
+                      // Parse URL and open gallery if it contains #&pid=3&gid=1
+                      var hashData = photoswipeParseHash();
+                      if(hashData.pid && hashData.gid) {
+                        openPhotoswipe(parseInt(hashData.gid, 10) - 1, parseInt(hashData.pid, 10) - 1, true);
+                      }
+                  };
+      
+                  initPhotoSwipeFromDOM();
+      
+              })();
+          });
+    </script>
   </body>
 </html>
