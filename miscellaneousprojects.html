@@ -7,7 +7,7 @@
     <!-- Enable responsiveness on mobile devices-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
     <title>
-      Pizza Money! &middot; Mick Derks 
+      Miscellaneous Projects &middot; Mick Derks 
     </title>
     <!-- CSS -->
     <link rel="stylesheet" href="/assets/css/poole.css">
@@ -66,8 +66,10 @@
         <nav class="sidebar-nav">
           <a class="sidebar-nav-item" href="/blog">Blog</a>
           <a class="sidebar-nav-item" href="/about">About</a>
+          <a class="sidebar-nav-item active" href="/miscellaneousprojects">Miscellaneous Projects</a>
           <p class="category">Projects</p>
           <a class="sidebar-nav-item" href="/projects/flood">Flood</a>
+          <a class="sidebar-nav-item" href="miscellaneousprojects.html">Misc</a>
         </nav>
       </div>
       <!--
@@ -78,26 +80,26 @@
     </div>
     <div class="content container">
       <div class="page">
-        <h1 class="page-title">Pizza Money!</h1>
-        <p>
-          Hey! Thanks for considering donating!
-        </p>
-        <p>
-          I don't like ads, and I'm too self-conscious to charge for a mobile game. Not that that's a particularly viable strategy anyway... So I figured I'd add the option to donate if you really liked the game. No worries if you don't. The whole thing was mostly a portfolio piece anyway.
-        </p>
-        <p>
-          Donate through here:
-        </p>
-        <p>
-          <a href="https://twitch.streamlabs.com/divinerage">https://twitch.streamlabs.com/divinerage</a>
-        </p>
-        <p>
-          Or here:
-        </p>
-        <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top"><input name="cmd" type="hidden" value="_s-xclick" />
-          <input name="hosted_button_id" type="hidden" value="APZY7JF5D2XYA" />
-          <input alt="PayPal – The safer, easier way to pay online!" name="submit" src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" type="image" />
-          <img class="aligncenter" src="https://www.paypalobjects.com/nl_NL/i/scr/pixel.gif" alt="" width="1" height="1" border="0" /></form>
+        <h1 class="page-title">Miscellaneous Projects</h1>
+        <h2 id="--dithered-shading">- Dithered Shading</h2>
+        <p>Fairly simple thresholding of the light intensity using a ramp and pattern texture. Could really use some of <a href="https://forums.tigsource.com/index.php?topic=40832.msg1363742#msg1363742">this</a>, as it becomes very noisy when looking around.</p>
+        <div style="position:relative;padding-bottom:75%">
+          <iframe src="https://gfycat.com/ifr/GiantNeatBittern" frameborder="0" scrolling="no" width="100%" height="100%" style="position:absolute;top:0;left:0;" allowfullscreen=""></iframe>
+        </div>
+        <h2 id="--developer-console">- Developer Console</h2>
+        <p>A developer console using C# reflection and attributes. Automatically converts from input string to desired argument type.</p>
+        <p class="inline-image"><img src="/assets/img/projects/misc/misc_ucon_vs.png" alt="alt text" title="This..." /></p>
+        <p class="inline-image"><img src="/assets/img/projects/misc/misc_ucon_unity.png" alt="alt text" title="Allows for this." /></p>
+        <h2 id="--gpu-compute-mesh-grid-displacement">- GPU Compute mesh grid displacement</h2>
+        <p>Using a texture to displace the top half of each pillar. The texture is noise generated in a compute shader. Planned to use this as the terrain for a tower defense game that never was.</p>
+        <div style="width: 100%; height: 0px; position: relative; padding-bottom: 97.627%;">
+          <iframe src="https://streamable.com/s/3aq1y/ildzla" frameborder="0" width="80%" height="80%" allowfullscreen="" style="width: 100%; height: 100%; position: absolute;"></iframe>
+        </div>
+        <h2 id="--voxel-art-test">- Voxel Art Test</h2>
+        <p>A quick test to see how good I could make voxel art look in-engine with minimal processing. These models came pretty much straight out of <a href="https://ephtracy.github.io">MagicaVoxel</a></p>
+        <div style="width: 100%; height: 0px; position: relative; padding-bottom: 75.000%;">
+          <iframe src="https://streamable.com/s/2monv/pyxfwf" frameborder="0" width="100%" height="100%" allowfullscreen="" style="width: 100%; height: 100%; position: absolute;"></iframe>
+        </div>
       </div>
     </div>
     <!-- Root element of PhotoSwipe. Must have class pswp. -->
