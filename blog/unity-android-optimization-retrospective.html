@@ -50,6 +50,13 @@
     </script>
   </head>
   <body>
+    <div class="hamburger-container" onclick="document.getElementById('hamburger-x').classList.toggle('is-active'); document.getElementsByClassName('sidebar')[0].classList.toggle('is-active');">
+      <div class="hamburger" id="hamburger-x">
+        <span class="line"></span>
+        <span class="line"></span>
+        <span class="line"></span>
+      </div>
+    </div>
     <div class="sidebar">
       <div class="container sidebar-sticky">
         <div class="sidebar-about">
@@ -61,7 +68,7 @@
               Mick Derks
             </a>
           </h1>
-          <p class="lead">Game Developer, Programmer, Nerd.</p>
+          <p class="lead">Game Developer, Nerd.</p>
         </div>
         <nav class="sidebar-nav">
           <a class="sidebar-nav-item" href="/blog">Blog</a>
