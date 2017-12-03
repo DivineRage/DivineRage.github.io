@@ -199,8 +199,13 @@
   margin-bottom:-.5em;
 }
 @media(max-width: 48rem) {
+  .frontpage-element-title {
+    padding:2rem;
+    line-height:3rem;
+  }
   .frontpage-element-title p {
     font-size:36px;
+    margin-bottom:0;
   }
 }
 .frontpage-element-title a {
