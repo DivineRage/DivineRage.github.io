@@ -113,10 +113,10 @@
     -webkit-transition: all 0.3s ease-in-out;
     -o-transition: all 0.3s ease-in-out;
     transition: all 0.3s ease-in-out;
-    font-size:1.5rem;
+    font-size:1.25rem;
   }
   .lead {
-    font-size:1.5rem;
+    font-size:1.25rem;
   }
   
   .sidebar.is-active {
