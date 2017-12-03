@@ -113,6 +113,10 @@
     -webkit-transition: all 0.3s ease-in-out;
     -o-transition: all 0.3s ease-in-out;
     transition: all 0.3s ease-in-out;
+    font-size:1.5rem;
+  }
+  .lead {
+    font-size:2rem;
   }
   
   .sidebar.is-active {
@@ -142,6 +146,9 @@
 /*   Frontpage  */
 /****************/
 .frontpage-container {
+  background-color:#404040;
+  padding-top:2vh;
+  padding-left:2vh;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -151,16 +158,19 @@
 }
 @media(min-width: 48rem) {
   .frontpage-container {
-    padding-left:16em;
+    margin-left:16em;
   }
 }
 .frontpage-element {
   background-color:black;
 
+  margin-right:2vh;
+  margin-bottom:2vh;
+  
   flex: 1 1 22em;
   max-width:44em;
   align-self: auto;
-  height:100vh;
+  height:90vh;
   
   -margin-left:.5em;
   -margin-right:.5em;
