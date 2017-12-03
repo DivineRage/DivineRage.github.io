@@ -339,8 +339,8 @@ tbody tr:nth-child(odd) th {
 
 
 .hamburger .line{
-  width: 50px;
-  height: 5px;
+  width: 30px;
+  height: 4px;
   background-color: #ecf0f1;
   display: block;
   margin: 8px auto;
@@ -356,9 +356,9 @@ tbody tr:nth-child(odd) th {
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
-  width:6rem;
-  height:6rem;
-  padding: 1.5rem 1rem;
+  width:4rem;
+  height:4rem;
+  padding: 1rem 1rem;
   background-color: #20202020;
   text-align: center;
 }
@@ -380,19 +380,19 @@ tbody tr:nth-child(odd) th {
 }
 
 #hamburger-x.is-active .line:nth-child(1){
-  -webkit-transform: translateY(13px) rotate(45deg);
-  -ms-transform: translateY(13px) rotate(45deg);
-  -o-transform: translateY(13px) rotate(45deg);
-  transform: translateY(13px) rotate(45deg);
+  -webkit-transform: translateY(12px) rotate(45deg);
+  -ms-transform: translateY(12px) rotate(45deg);
+  -o-transform: translateY(12px) rotate(45deg);
+  transform: translateY(12px) rotate(45deg);
 }
 #hamburger-x.is-active .line:nth-child(2){
   opacity: 0;
 }
 #hamburger-x.is-active .line:nth-child(3){
-  -webkit-transform: translateY(-13px) rotate(-45deg);
-  -ms-transform: translateY(-13px) rotate(-45deg);
-  -o-transform: translateY(-13px) rotate(-45deg);
-  transform: translateY(-13px) rotate(-45deg);
+  -webkit-transform: translateY(-12px) rotate(-45deg);
+  -ms-transform: translateY(-12px) rotate(-45deg);
+  -o-transform: translateY(-12px) rotate(-45deg);
+  transform: translateY(-12px) rotate(-45deg);
 }
 
 
