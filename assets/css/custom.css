@@ -149,6 +149,7 @@
   background-color:#404040;
   padding-top:2vh;
   padding-left:2vh;
+  min-height:100vh;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
