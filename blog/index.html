@@ -498,6 +498,7 @@
                         e.preventDefault ? e.preventDefault() : e.returnValue = false;
       
                         var eTarget = e.target || e.srcElement;
+                        console.log(e);
                         if (!eTarget.hasAttribute("data-gid") || !eTarget.hasAttribute("data-pid"))
                           return;
       
@@ -519,9 +520,18 @@
                           var img = images[i];
                           var a = img.parentNode;
                           var item = {};
-                          item.src = a.href;
-                          item.w = a.getAttribute("defaultwidth");
-                          item.h = a.getAttribute("defaultheight");
+                          if (a.href) {
+                            item.src = a.href;
+                            item.w = a.getAttribute("defaultwidth");
+                            item.h = a.getAttribute("defaultheight");
+                          } else {
+                            item.src = img.src;
+                            item.w = img.naturalWidth;
+                            item.h = img.naturalHeight;
+                          }
+                          //item.src = a ? a.href : img.src;
+                          //item.w = a.getAttribute("defaultwidth") || img.naturalWidth;
+                          //item.h = a.getAttribute("defaultheight") || img.naturalHeight;
                           items.push(item);
                         }
       

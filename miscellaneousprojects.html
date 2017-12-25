@@ -96,6 +96,9 @@
         <p>A developer console using C# reflection and attributes. Automatically converts from input string to desired argument type. Since I stopped working on this mid-feature bloat (wanting parsing to work exactly like linux’s bash) <a href="https://bitbucket.org/DivineRage/ucon/src/935e31163e4e250e17c58ce53eb474c0d62ab212/Assets/UConsole/?at=master">I might as well share the source code</a>.</p>
         <p class="inline-image"><img src="/assets/img/projects/misc/misc_ucon_vs.png" alt="alt text" title="This..." /></p>
         <p class="inline-image"><img src="/assets/img/projects/misc/misc_ucon_unity.png" alt="alt text" title="Allows for this." /></p>
+        <h2 id="--hologram-of-voxel-terrain">- Hologram of Voxel Terrain</h2>
+        <p>Fancy visuals on voxel terrain. Inspired by the desire to improve on the scanning room in Subnautica. Still want to try volumetric rendering of the actual voxel terrain by using a 3d rendertexture as a data source.</p>
+        <p class="inline-image"><img src="/assets/img/projects/misc/misc_hologram_table.png" alt="alt text" title="Hologram table" /></p>
         <h2 id="--loadorderhelper-a-rimworld-mod">- <a href="http://steamcommunity.com/sharedfiles/filedetails/?id=1112344724">LoadOrderHelper</a>, A Rimworld mod</h2>
         <p>A mod for <a href="http://store.steampowered.com/app/294100/RimWorld/">Rimworld</a> that allows you to load the mod load order for any given savefile. This allows you to easily switch between mod configurations. Made for Rimworld Alpha 17.</p>
         <p class="inline-image"><img src="/assets/img/projects/misc/misc_loadorderhelper.png" alt="alt text" title="A Rimworld mod" /></p>
@@ -178,6 +181,7 @@
                         e.preventDefault ? e.preventDefault() : e.returnValue = false;
       
                         var eTarget = e.target || e.srcElement;
+                        console.log(e);
                         if (!eTarget.hasAttribute("data-gid") || !eTarget.hasAttribute("data-pid"))
                           return;
       
@@ -199,9 +203,18 @@
                           var img = images[i];
                           var a = img.parentNode;
                           var item = {};
-                          item.src = a.href;
-                          item.w = a.getAttribute("defaultwidth");
-                          item.h = a.getAttribute("defaultheight");
+                          if (a.href) {
+                            item.src = a.href;
+                            item.w = a.getAttribute("defaultwidth");
+                            item.h = a.getAttribute("defaultheight");
+                          } else {
+                            item.src = img.src;
+                            item.w = img.naturalWidth;
+                            item.h = img.naturalHeight;
+                          }
+                          //item.src = a ? a.href : img.src;
+                          //item.w = a.getAttribute("defaultwidth") || img.naturalWidth;
+                          //item.h = a.getAttribute("defaultheight") || img.naturalHeight;
                           items.push(item);
                         }
       
